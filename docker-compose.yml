@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+
+  nodeapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    image: nodejs
+    container_name: nodeapi
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NODE_PORT=$NODE_PORT
+      - REDIS_HOST=redisdb
+      - REDIS_PORT=$REDIS_PORT
+    ports:
+      - "11000:11000"
+    volumes:
+      - .:/redis-app
+      - ./node_modules:/redis-app/node_modules
+    networks:
+      - app-network
+    command: npm start
+    depends_on:
+      - redisdb
+
+  redisdb:
+    image: redis:6.2.5
+    container_name: redisdb
+    restart: unless-stopped
+    volumes:
+      - dbdata:/data/db
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  dbdata:
+  node_modules:
