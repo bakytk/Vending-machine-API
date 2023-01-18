@@ -1,13 +1,13 @@
 FROM node:10-alpine
 
-ADD . /redis-app
-WORKDIR /redis-app
+ADD . /vending-app
+WORKDIR /vending-app
 
-COPY package*.json ./redis-app/
+COPY package*.json ./vending-app/
 RUN npm install
 
 #COPY --chown=node:node . .
 
-EXPOSE 11000
+EXPOSE 15500
 
 CMD [ "npm", "start" ]

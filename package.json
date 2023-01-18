@@ -1,17 +1,15 @@
 {
   "name": "redisapi",
   "version": "1.0.0",
-  "description": "<img src=\"https://i.ibb.co/bRHqv6G/docker.png\" width=\"500\"><br/><br/>",
-  "main": "db.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node redis-api.js",
-    "test": "nodemon redis-api.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bluebird": "^3.7.2",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
