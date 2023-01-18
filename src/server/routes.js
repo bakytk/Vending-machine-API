@@ -1,12 +1,5 @@
 const { JWT_SECRET } = process.env;
-import {
-  //authenticate,
-  //fetch,
-  //create,
-  // ping,
-  controllers
-  // fallback
-} from "./controllers.js";
+import { controllers } from "./controllers.js";
 //const { authVerify } = require("./auth");
 import express from "express";
 const router = express.Router();
@@ -14,9 +7,9 @@ const router = express.Router();
 import bodyParser from "body-parser";
 router.use(bodyParser.json());
 
-// if (!JWT_SECRET) {
-//   throw new Error("Missing JWT_SECRET env");
-// }
+if (!JWT_SECRET) {
+  throw new Error("Missing JWT_SECRET token");
+}
 //const confirmToken = authVerify(JWT_SECRET);
 
 //router.post("/auth", authenticate);

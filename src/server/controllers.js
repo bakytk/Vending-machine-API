@@ -1,30 +1,29 @@
 const { JWT_SECRET } = process.env;
-console.log("JWT_SECRET", JWT_SECRET);
 //const { authSign, AuthError } = require("./auth");
 //const { GetMovie } = require("../omdb/rest_api");
-//const db = require("../db/index");
+import db from "../db/index.js";
 
-// if (!JWT_SECRET) {
-//   throw new Error("Missing JWT_SECRET env");
-// }
+if (!JWT_SECRET) {
+  throw new Error("Missing JWT_SECRET env");
+}
 //const generateToken = authSign(JWT_SECRET);
 //const MOVIE_FIELDS = ["Title", "Released", "Genre", "Director"];
 
-// db.mongoose
-//   .connect(
-//     db.url,
-//     {
-//       useNewUrlParser: true,
-//       useUnifiedTopology: true
-//     }
-//   )
-//   .then(() => {
-//     console.log("Connected to the database!");
-//   })
-//   .catch(err => {
-//     console.log("Cannot connect to the database!", err);
-//     process.exit();
-//   });
+db.mongoose
+  .connect(
+    db.url,
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    }
+  )
+  .then(() => {
+    console.log("Connected to the database!");
+  })
+  .catch(err => {
+    console.log("Cannot connect to the database!", err);
+    process.exit();
+  });
 
 /*
   'movies' collection created by default:
