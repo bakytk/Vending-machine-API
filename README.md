@@ -1,14 +1,16 @@
 <img src="https://i.ibb.co/16y7W7W/vending.jpg" width="300"><br/><br/>
 
-# Vending-API
+### Vending-API
 
-### Guidelines
+##### Guidelines
 
 - "seller" role to add, update or remove products
 - "buyer" role can deposit coins into the machine and make purchases
 - Your vending machine should only accept 5, 10, 20, 50 and 100 cent coins
+- JWT token valid 10min, if time elapsed more, use GET /user to re-login & fetch new access Bearer token
+- 'productName' for Product is expected to be unique, as well as 'username' for User
 
-### Schemas
+##### Schemas
 
 ```
 Product {
@@ -28,8 +30,7 @@ role
 }
 ```
 
-- JWT token valid 10min, if time elapsed more, use GET /user to re-login & fetch new access Bearer token
-- 'productName' for Product is expected to be unique, as well as 'username' for User
+##### cURL commands
 
 ```
 #1: sign-up:
