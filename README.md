@@ -1,14 +1,14 @@
 <img src="https://i.ibb.co/16y7W7W/vending.jpg" width="300"><br/><br/>
 
-**Vending-API**
+# Vending-API
 
-_Guidelines_
+### Guidelines
 
 - "seller" role to add, update or remove products
 - "buyer" role can deposit coins into the machine and make purchases
 - Your vending machine should only accept 5, 10, 20, 50 and 100 cent coins
 
-###Schemas
+### Schemas
 
 ```
 Product {
