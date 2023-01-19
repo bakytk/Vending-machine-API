@@ -15,7 +15,8 @@ export const Product = mongoose => {
     },
     sellerId: {
       type: String,
-      required: true
+      required: true,
+      unique: true
     }
   });
   return mongoose.model("Product", productSchema);
@@ -25,9 +26,15 @@ export const Product = mongoose => {
 
 export const User = mongoose => {
   var userSchema = mongoose.Schema({
+    userId: {
+      type: String,
+      required: true,
+      unique: true
+    },
     username: {
       type: String,
-      required: true
+      required: true,
+      unique: true
     },
     password: {
       type: String,

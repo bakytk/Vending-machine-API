@@ -54,10 +54,12 @@ export const controllers = {
         throw new Error("Username or password absent!");
       }
       let refreshToken = uuid();
+      let userId = uuid();
       let data = {
         username,
         password,
-        refreshToken
+        refreshToken,
+        userId
       };
       if (role) {
         if (!(role === "buyer") || !(role === "seller")) {
@@ -69,7 +71,11 @@ export const controllers = {
         ...data
       });
       await user.save();
-      let token = jwt.sign(data, JWT_SECRET, { expiresIn: "10m" });
+      let tokenData = {
+        userId,
+        role
+      };
+      let token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "10m" });
       res.json({
         message: "Successful registration!",
         access_token: token,
@@ -77,35 +83,55 @@ export const controllers = {
       });
     } catch (e) {
       console.log("signup error", e);
-      res.send("Processing error.");
+      res.send(`Signup error: ${e.message}`);
     }
   },
-  authenticate: (req, res, next) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ error: "Invalid payload" });
-    }
+  signin: async (req, res) => {
     try {
-      const token = generateToken(username, password);
-      return res.status(200).json({ token });
-    } catch (error) {
-      if (error instanceof AuthError) {
-        return res.status(401).json({ error: error.message });
+      let { username, password } = req.body;
+      if (!(username && password)) {
+        throw new Error("Username or password absent!");
       }
-      next(error);
+      let user = await User.find({
+        username,
+        password
+      });
+      console.log("user", user);
+      if (!(user.length > 0)) {
+        throw new Error("Username not found!");
+      }
+      //console.log("fetched user", result);
+      let { password: db_password, role, refreshToken, userId } = user[0];
+      console.log("passwords:", password, db_password);
+      if (db_password != password) {
+        throw new Error("Incorrect password!");
+      }
+      let tokenData = {
+        userId,
+        role
+      };
+      let token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "10m" });
+      res.json({
+        message: "Successful authentication!",
+        access_token: token,
+        refresh_token: refreshToken
+      });
+    } catch (e) {
+      console.log("signin error", e);
+      res.send(`Signin error: ${e.message}`);
     }
   },
 
-  fetch: async (req, res) => {
-    let { name } = req.decode;
-    let movies = await Movie.find({ UserName: name });
-    let data = [];
-    for (const movie of movies) {
-      let { Title, Released, Genre, Director } = movie;
-      let subset = { Title, Released, Genre, Director };
-      data.push(subset);
-    }
-    return res.status(200).json({ data: data });
+  getProduct: async (req, res) => {
+    let { userId, role } = req.decode;
+    // let movies = await Movie.find({ UserName: name });
+    // let data = [];
+    // for (const movie of movies) {
+    //   let { Title, Released, Genre, Director } = movie;
+    //   let subset = { Title, Released, Genre, Director };
+    //   data.push(subset);
+    // }
+    return res.status(200).json({ data: "data" });
   },
 
   create: async (req, res) => {
