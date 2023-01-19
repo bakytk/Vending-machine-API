@@ -8,13 +8,15 @@ _Guidelines_
 - "buyer" role can deposit coins into the machine and make purchases
 - Your vending machine should only accept 5, 10, 20, 50 and 100 cent coins
 
-> Product {
-> productId,
-> amountAvailable,
-> cost,
-> productName,
-> sellerId
-> }
+```
+Product {
+productId,
+amountAvailable,
+cost,
+productName,
+sellerId
+}
+```
 
 > User {
 > userId,
