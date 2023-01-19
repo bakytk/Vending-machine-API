@@ -26,6 +26,7 @@ router.delete("/product", confirmToken, controllers.deleteProduct);
 
 router.post("/deposit", confirmToken, controllers.deposit);
 router.post("/buy", confirmToken, controllers.buy);
+router.post("/reset", confirmToken, controllers.reset);
 router.all("/*", controllers.fallback);
 router.use((error, _, res, __) => {
   console.error(`Processing err: ${error}`);

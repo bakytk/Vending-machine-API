@@ -32,9 +32,11 @@ export const controllers = {
   fallback: (req, res) => {
     return res.status(401).json({ message: "Invalid endpoint or method" });
   },
+
   ping: (req, res) => {
     return res.status(200).json({ message: "Pong!" });
   },
+
   signup: async (req, res) => {
     try {
       let { username, password, role } = req.body;
@@ -73,6 +75,7 @@ export const controllers = {
       res.send(`Signup error: ${e.message}`);
     }
   },
+
   signin: async (req, res) => {
     try {
       let { username, password } = req.body;
@@ -111,9 +114,9 @@ export const controllers = {
   createProduct: async (req, res) => {
     try {
       let { userId, role } = req.decode;
-      console.log("userId, role", userId, role);
-      if (!(userId && role)) {
-        throw new Error("'userId or role' not available in token");
+      //console.log("userId, role", userId, role);
+      if (!(userId && role === "seller")) {
+        throw new Error("'userId or role' not validated");
       }
       if (role !== "seller") {
         throw new Error("Action not valid for role");
@@ -178,8 +181,8 @@ export const controllers = {
       //step 1. check if we have userId & role
       let { userId, role } = req.decode;
       //console.log("userId, role", userId, role);
-      if (!(userId && role)) {
-        throw new Error("'userId or role' not available in token");
+      if (!(userId && role === "seller")) {
+        throw new Error("'userId or role' not validated");
       }
 
       //step 2. parse productName & search for it
@@ -225,8 +228,8 @@ export const controllers = {
     try {
       //step 1. check if we have userId & role
       let { userId, role } = req.decode;
-      if (!(userId && role)) {
-        throw new Error("'userId or role' not available in token");
+      if (!(userId && role === "seller")) {
+        throw new Error("'userId or role' not validated");
       }
 
       //step 2. deleteProduct
@@ -263,9 +266,9 @@ export const controllers = {
         throw new Error("Provided coin value is ineligible.");
       }
       let { userId, role } = req.decode;
-      console.log("userId, role", userId, role);
+      //console.log("userId, role", userId, role);
       if (!(userId && role === "buyer")) {
-        throw new Error("'userId or role' not available in token");
+        throw new Error("'userId or role' not validated");
       }
 
       //Get currentBalance of Deposit
@@ -300,7 +303,7 @@ export const controllers = {
       }
       let { userId, role } = req.decode;
       if (!(userId && role === "buyer")) {
-        throw new Error("'userId or role' not available in token");
+        throw new Error("'userId or role' not validated");
       }
 
       //Get User to fetch deposit
@@ -310,7 +313,7 @@ export const controllers = {
       if (!(user.length > 0)) {
         throw new Error("User not found!");
       }
-      console.log("user", user[0]);
+      //console.log("user", user[0]);
       let { deposit } = user[0];
 
       //check if there are enough items
@@ -320,7 +323,7 @@ export const controllers = {
       if (!(product.length > 0)) {
         throw new Error("Product not found!");
       }
-      console.log("product", product[0]);
+      //console.log("product", product[0]);
       let { cost, amountAvailable } = product[0];
       if (amountAvailable < Number(amountProducts)) {
         throw new Error("Insufficient product stock for the purchase.");
@@ -367,6 +370,33 @@ export const controllers = {
     } catch (e) {
       console.error("buy error", e);
       res.send(`buy error: ${e.message}`);
+    }
+  },
+
+  reset: async (req, res) => {
+    try {
+      let { userId, role } = req.decode;
+      //console.log("userId, role", userId, role);
+      if (!(userId && role === "buyer")) {
+        throw new Error("'userId or role' not validated");
+      }
+
+      //Get currentBalance of Deposit
+      let user = await User.find({
+        userId
+      });
+      //console.log("reset user", user);
+      if (!(user.length > 0)) {
+        throw new Error("User not found!");
+      }
+      let deposit = 0;
+      await User.findOneAndUpdate({ userId }, { deposit });
+      return res.json({
+        message: "User deposit reset!"
+      });
+    } catch (e) {
+      console.error("deposit error", e);
+      res.send(`deposit error: ${e.message}`);
     }
   }
 };
