@@ -1,8 +1,12 @@
 //add constraint: cost is multiple of 5's
-const DEPOSIT_COIN_VALUES = [5, 10, 20, 50, 100];
 
 export const Product = mongoose => {
   var productSchema = mongoose.Schema({
+    productId: {
+      type: String,
+      required: true,
+      unique: true
+    },
     amountAvailable: {
       type: Number,
       required: true,
@@ -59,10 +63,11 @@ export const User = mongoose => {
       type: Number,
       validate: {
         validator: function(input) {
-          return DEPOSIT_COIN_VALUES.includes(input);
+          return typeof input === "number";
         },
-        message: "Deposit should be in multiple of 5"
-      }
+        message: "Deposit must be a number"
+      },
+      default: 0
     },
     role: {
       type: String,

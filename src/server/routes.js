@@ -23,6 +23,8 @@ router.get("/product", controllers.getProduct);
 router.post("/product", confirmToken, controllers.createProduct);
 router.put("/product", confirmToken, controllers.putProduct);
 router.delete("/product", confirmToken, controllers.deleteProduct);
+
+router.post("/deposit", confirmToken, controllers.deposit);
 //router.post("/movies", create);
 router.all("/*", controllers.fallback);
 router.use((error, _, res, __) => {

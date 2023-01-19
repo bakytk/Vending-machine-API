@@ -1,4 +1,6 @@
 const { JWT_SECRET } = process.env;
+const DEPOSIT_COIN_VALUES = [5, 10, 20, 50, 100];
+
 import db from "../db/index.js";
 import jwt from "jsonwebtoken";
 import { uuid } from "uuidv4";
@@ -37,8 +39,11 @@ export const controllers = {
     try {
       let { username, password, role } = req.body;
       //console.log("req.body", req.body);
-      if (!(username && password)) {
+      if (!(username && password && role)) {
         throw new Error("Username or password absent!");
+      }
+      if (!(role === "buyer" || role === "seller")) {
+        throw new Error("Invalid role!");
       }
       let refreshToken = uuid();
       let userId = uuid();
@@ -46,14 +51,9 @@ export const controllers = {
         username,
         password,
         refreshToken,
-        userId
+        userId,
+        role
       };
-      if (role) {
-        if (!(role === "buyer" || role === "seller")) {
-          throw new Error("Invalid role!");
-        }
-        data["role"] = role;
-      }
       let user = new User({
         ...data
       });
@@ -109,52 +109,62 @@ export const controllers = {
   },
 
   createProduct: async (req, res) => {
-    let { userId, role } = req.decode;
-    console.log("userId, role", userId, role);
-    if (!(userId && role)) {
-      throw new Error("'userId or role' not available in token");
+    try {
+      let { userId, role } = req.decode;
+      console.log("userId, role", userId, role);
+      if (!(userId && role)) {
+        throw new Error("'userId or role' not available in token");
+      }
+      if (role !== "seller") {
+        throw new Error("Action not valid for role");
+      }
+      let { productName, amountAvailable, cost } = req.body;
+      if (!(productName && amountAvailable && cost)) {
+        throw new Error(
+          "One of 'productName, amountAvailable, cost' params not passed"
+        );
+      }
+      let product = new Product({
+        productName,
+        amountAvailable: Number(amountAvailable),
+        cost: Number(cost),
+        sellerId: userId
+      });
+      await product.save();
+      return res.status(200).json({ message: "Product successfully created!" });
+    } catch (e) {
+      console.error("createProduct error", e);
+      res.send(`createProduct error: ${e.message}`);
     }
-    if (role !== "seller") {
-      throw new Error("Action not valid for role");
-    }
-    let { productName, amountAvailable, cost } = req.body;
-    if (!(productName && amountAvailable && cost)) {
-      throw new Error(
-        "One of 'productName, amountAvailable, cost' params not passed"
-      );
-    }
-    let product = new Product({
-      productName,
-      amountAvailable: Number(amountAvailable),
-      cost: Number(cost),
-      sellerId: userId
-    });
-    await product.save();
-    return res.status(200).json({ message: "Product successfully created!" });
   },
 
   getProduct: async (req, res) => {
-    let { productName: name } = req.body;
-    if (!name) {
-      throw new Error("'productName' param not passed!");
-    } else {
-      name = name.trim();
-    }
-    let product = await Product.find({
-      productName: name
-    });
-    //console.log("product", product);
-    if (!(product.length > 0)) {
-      throw new Error("Product not found!");
-    }
-    let { productName, amountAvailable, cost } = product[0];
-    return res.status(200).json({
-      data: {
-        productName,
-        amountAvailable,
-        cost
+    try {
+      let { productName: name } = req.body;
+      if (!name) {
+        throw new Error("'productName' param not passed!");
+      } else {
+        name = name.trim();
       }
-    });
+      let product = await Product.find({
+        productName: name
+      });
+      //console.log("product", product);
+      if (!(product.length > 0)) {
+        throw new Error("Product not found!");
+      }
+      let { productName, amountAvailable, cost } = product[0];
+      return res.status(200).json({
+        data: {
+          productName,
+          amountAvailable,
+          cost
+        }
+      });
+    } catch (e) {
+      console.error("getProduct error", e);
+      res.send(`getProduct error: ${e.message}`);
+    }
   },
 
   putProduct: async (req, res) => {
@@ -201,7 +211,7 @@ export const controllers = {
       return res.status(200).json({ message: "Product successfully updated!" });
     } catch (e) {
       console.error("putProduct", e);
-      throw new Error("putProduct error:", e.message);
+      res.send("putProduct error:", e.message);
     }
   },
 
@@ -236,7 +246,43 @@ export const controllers = {
       return res.status(200).json({ message: "Product successfully deleted!" });
     } catch (e) {
       console.error("deleteProduct error", e);
-      throw new Error(`deleteProduct error: ${e.message}`);
+      res.send(`deleteProduct error: ${e.message}`);
+    }
+  },
+
+  deposit: async (req, res) => {
+    try {
+      let { coin } = req.body;
+      if (!DEPOSIT_COIN_VALUES.includes(Number(coin))) {
+        throw new Error("Provided coin value is ineligible.");
+      }
+      let { userId, role } = req.decode;
+      console.log("userId, role", userId, role);
+      if (!(userId && role === "buyer")) {
+        throw new Error("'userId or role' not available in token");
+      }
+
+      //Get currentBalance of Deposit
+      let user = await User.find({
+        userId
+      });
+      //console.log("user", user);
+      if (!(user.length > 0)) {
+        throw new Error("User not found!");
+      }
+      let { deposit } = user[0];
+      deposit += Number(coin);
+      await User.findOneAndUpdate({ userId }, { deposit });
+      return res.json({
+        message: "Coin successfully deposited!",
+        data: {
+          userId,
+          deposit
+        }
+      });
+    } catch (e) {
+      console.error("deposit error", e);
+      res.send(`deposit error: ${e.message}`);
     }
   }
 };
