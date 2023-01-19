@@ -91,7 +91,16 @@ export const controllers = {
         throw new Error("Username not found!");
       }
       //console.log("fetched user", result);
-      let { password: db_password, role, refreshToken, userId } = user[0];
+      let {
+        password: db_password,
+        role,
+        refreshToken,
+        userId,
+        signedIn
+      } = user[0];
+      if (signedIn) {
+        throw new Error("User already logged in.");
+      }
       if (db_password != password) {
         throw new Error("Incorrect password!");
       }
@@ -397,6 +406,28 @@ export const controllers = {
     } catch (e) {
       console.error("deposit error", e);
       res.send(`deposit error: ${e.message}`);
+    }
+  },
+
+  logout: async (req, res) => {
+    try {
+      let { userId } = req.decode;
+      if (!userId) {
+        throw new Error("'userId' not validated");
+      }
+      let user = await User.find({
+        userId
+      });
+      if (!(user.length > 0)) {
+        throw new Error("User not found!");
+      }
+      await User.findOneAndUpdate({ userId }, { signedIn: false });
+      return res.json({
+        message: "User logged out!"
+      });
+    } catch (e) {
+      console.error("logout error", e);
+      res.send(`logout error: ${e.message}`);
     }
   }
 };

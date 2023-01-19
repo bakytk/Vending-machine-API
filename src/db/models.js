@@ -72,6 +72,10 @@ export const User = mongoose => {
       type: String,
       default: "buyer"
     },
+    signedIn: {
+      type: Boolean,
+      default: false
+    },
     refreshToken: {
       type: String
     }
