@@ -18,7 +18,11 @@ const confirmToken = authenticate(JWT_SECRET);
 router.get("/alive", controllers.ping);
 router.post("/user", controllers.signup);
 router.get("/user", controllers.signin);
-router.get("/product", confirmToken, controllers.getProduct);
+
+router.get("/product", controllers.getProduct);
+router.post("/product", confirmToken, controllers.createProduct);
+router.put("/product", confirmToken, controllers.putProduct);
+router.delete("/product", confirmToken, controllers.deleteProduct);
 //router.post("/movies", create);
 router.all("/*", controllers.fallback);
 router.use((error, _, res, __) => {

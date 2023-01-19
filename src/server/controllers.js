@@ -1,6 +1,4 @@
 const { JWT_SECRET } = process.env;
-//const { authSign, AuthError } = require("./auth");
-//const { GetMovie } = require("../omdb/rest_api");
 import db from "../db/index.js";
 import jwt from "jsonwebtoken";
 import { uuid } from "uuidv4";
@@ -8,8 +6,6 @@ import { uuid } from "uuidv4";
 if (!JWT_SECRET) {
   throw new Error("Missing JWT_SECRET env");
 }
-//const generateToken = authSign(JWT_SECRET);
-//const MOVIE_FIELDS = ["Title", "Released", "Genre", "Director"];
 
 db.mongoose
   .connect(
@@ -27,15 +23,6 @@ db.mongoose
     process.exit();
   });
 
-/*
-  'movies' collection created by default:
-    in schema/models.js
-*/
-// const Movie = db.movies;
-// function getFirstDay(year, month) {
-//   return new Date(year, month, 1);
-// }
-
 const User = db.user;
 const Product = db.product;
 
@@ -49,7 +36,7 @@ export const controllers = {
   signup: async (req, res) => {
     try {
       let { username, password, role } = req.body;
-      console.log("req.body", req.body);
+      //console.log("req.body", req.body);
       if (!(username && password)) {
         throw new Error("Username or password absent!");
       }
@@ -62,7 +49,7 @@ export const controllers = {
         userId
       };
       if (role) {
-        if (!(role === "buyer") || !(role === "seller")) {
+        if (!(role === "buyer" || role === "seller")) {
           throw new Error("Invalid role!");
         }
         data["role"] = role;
@@ -96,13 +83,12 @@ export const controllers = {
         username,
         password
       });
-      console.log("user", user);
+      //console.log("user", user);
       if (!(user.length > 0)) {
         throw new Error("Username not found!");
       }
       //console.log("fetched user", result);
       let { password: db_password, role, refreshToken, userId } = user[0];
-      console.log("passwords:", password, db_password);
       if (db_password != password) {
         throw new Error("Incorrect password!");
       }
@@ -122,83 +108,135 @@ export const controllers = {
     }
   },
 
-  getProduct: async (req, res) => {
+  createProduct: async (req, res) => {
     let { userId, role } = req.decode;
-    // let movies = await Movie.find({ UserName: name });
-    // let data = [];
-    // for (const movie of movies) {
-    //   let { Title, Released, Genre, Director } = movie;
-    //   let subset = { Title, Released, Genre, Director };
-    //   data.push(subset);
-    // }
-    return res.status(200).json({ data: "data" });
+    console.log("userId, role", userId, role);
+    if (!(userId && role)) {
+      throw new Error("'userId or role' not available in token");
+    }
+    if (role !== "seller") {
+      throw new Error("Action not valid for role");
+    }
+    let { productName, amountAvailable, cost } = req.body;
+    if (!(productName && amountAvailable && cost)) {
+      throw new Error(
+        "One of 'productName, amountAvailable, cost' params not passed"
+      );
+    }
+    let product = new Product({
+      productName,
+      amountAvailable: Number(amountAvailable),
+      cost: Number(cost),
+      sellerId: userId
+    });
+    await product.save();
+    return res.status(200).json({ message: "Product successfully created!" });
   },
 
-  create: async (req, res) => {
+  getProduct: async (req, res) => {
+    let { productName: name } = req.body;
+    if (!name) {
+      throw new Error("'productName' param not passed!");
+    } else {
+      name = name.trim();
+    }
+    let product = await Product.find({
+      productName: name
+    });
+    //console.log("product", product);
+    if (!(product.length > 0)) {
+      throw new Error("Product not found!");
+    }
+    let { productName, amountAvailable, cost } = product[0];
+    return res.status(200).json({
+      data: {
+        productName,
+        amountAvailable,
+        cost
+      }
+    });
+  },
+
+  putProduct: async (req, res) => {
     try {
-      let { title: MovieTitle } = req.body;
-      if (!MovieTitle) {
-        throw new Error("Movie title not passed");
+      //step 1. check if we have userId & role
+      let { userId, role } = req.decode;
+      //console.log("userId, role", userId, role);
+      if (!(userId && role)) {
+        throw new Error("'userId or role' not available in token");
       }
 
-      /*
-        Step 1: Check if movie already exists
-      */
-      let { role: UserRole, name: UserName } = req.decode;
-      let movies = await Movie.find({
-        UserName: UserName,
-        Title: MovieTitle
+      //step 2. parse productName & search for it
+      let { productName, amountAvailable, cost, sellerId } = req.body;
+      if (!productName) {
+        throw new Error("required 'productName' param not passed!");
+      } else {
+        productName = productName.trim();
+      }
+      let product = await Product.find({
+        productName
       });
-      if (movies.length > 0) {
-        return res.status(200).json({
-          message: "Movie is already saved."
-        });
+      //console.log("product", product);
+      if (!(product.length > 0)) {
+        throw new Error("Product not found!");
+      }
+      let { sellerId: db_sellerId } = product[0];
+
+      //step 3. check role & requester is who created
+      if (!(userId === db_sellerId && role === "seller")) {
+        throw new Error("Either role or sellerId is ineligible!");
       }
 
-      /*
-        Step 2: Check if user.role=basic:
-        - impose constraint: max 5 movies/month
-        - time_window: calendar month (not rolling window)
-      */
-      if (UserRole === "basic") {
-        let date = new Date();
-        let firstDay = getFirstDay(date.getFullYear(), date.getMonth());
-        movies = await Movie.find({
-          UserName: UserName,
-          CreatedAt: { $gte: firstDay }
-        });
-        if (movies.length === 5 || movies.length > 5) {
-          return res.status(402).json({
-            message: "Basic plan limit exceeded."
-          });
-        }
+      //step 4.update
+      let updateData = {};
+      if (cost) {
+        updateData["cost"] = Number(cost);
+      } else if (amountAvailable) {
+        updateData["amountAvailable"] = Number(amountAvailable);
       }
-
-      /*
-        Step 3: All good:
-        => fetch movie data & save
-      */
-      let response = await GetMovie(MovieTitle);
-      if (response.error) {
-        //maybe not found!
-        throw new Error(response.error);
-      }
-      let { Title, Released, Genre, Director } = response.data;
-      let movie = new Movie({
-        Title,
-        Released,
-        Genre,
-        Director,
-        UserRole,
-        UserName
-      });
-      await movie.save();
-      return res.status(200).json({
-        message: "Movie saved successfully."
-      });
+      await Product.findOneAndUpdate(
+        { productName: productName },
+        { ...updateData }
+      );
+      return res.status(200).json({ message: "Product successfully updated!" });
     } catch (e) {
-      console.error(e);
-      return res.status(500).json({ message: e.message });
+      console.error("putProduct", e);
+      throw new Error("putProduct error:", e.message);
+    }
+  },
+
+  deleteProduct: async (req, res) => {
+    try {
+      //step 1. check if we have userId & role
+      let { userId, role } = req.decode;
+      if (!(userId && role)) {
+        throw new Error("'userId or role' not available in token");
+      }
+
+      //step 2. deleteProduct
+      let { productName } = req.body;
+      if (!productName) {
+        throw new Error("required 'productName' param not passed!");
+      } else {
+        productName = productName.trim();
+      }
+      let product = await Product.find({
+        productName
+      });
+      if (!(product.length > 0)) {
+        throw new Error("Product not found!");
+      }
+
+      //check sellerId match
+      let { sellerId: db_sellerId } = product[0];
+      if (!(userId === db_sellerId && role === "seller")) {
+        throw new Error("Either role or sellerId is ineligible!");
+      }
+      await Product.deleteOne({ productName });
+      return res.status(200).json({ message: "Product successfully deleted!" });
+    } catch (e) {
+      console.error("deleteProduct error", e);
+      throw new Error(`deleteProduct error: ${e.message}`);
     }
   }
 };
