@@ -14,6 +14,8 @@ if (!JWT_SECRET) {
 
 //router.post("/auth", authenticate);
 router.get("/alive", controllers.ping);
+router.post("/user", controllers.signup);
+//router.get("/user", controllers.signin);
 //router.get("/movies", fetch); //confirmToken,
 //router.post("/movies", create);
 router.all("/*", controllers.fallback);
