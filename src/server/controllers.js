@@ -2,6 +2,8 @@ const { JWT_SECRET } = process.env;
 //const { authSign, AuthError } = require("./auth");
 //const { GetMovie } = require("../omdb/rest_api");
 import db from "../db/index.js";
+import jwt from "jsonwebtoken";
+import { uuid } from "uuidv4";
 
 if (!JWT_SECRET) {
   throw new Error("Missing JWT_SECRET env");
@@ -18,7 +20,7 @@ db.mongoose
     }
   )
   .then(() => {
-    console.log("Connected to the database!");
+    console.log("Connected to the database2!");
   })
   .catch(err => {
     console.log("Cannot connect to the database!", err);
@@ -34,6 +36,9 @@ db.mongoose
 //   return new Date(year, month, 1);
 // }
 
+const User = db.user;
+const Product = db.product;
+
 export const controllers = {
   fallback: (req, res) => {
     return res.status(401).json({ message: "Invalid endpoint or method" });
@@ -41,7 +46,40 @@ export const controllers = {
   ping: (req, res) => {
     return res.status(200).json({ message: "Pong!" });
   },
-
+  signup: async (req, res) => {
+    try {
+      let { username, password, role } = req.body;
+      console.log("req.body", req.body);
+      if (!(username && password)) {
+        throw new Error("Username or password absent!");
+      }
+      let refreshToken = uuid();
+      let data = {
+        username,
+        password,
+        refreshToken
+      };
+      if (role) {
+        if (!(role === "buyer") || !(role === "seller")) {
+          throw new Error("Invalid role!");
+        }
+        data["role"] = role;
+      }
+      let user = new User({
+        ...data
+      });
+      await user.save();
+      let token = jwt.sign(data, JWT_SECRET, { expiresIn: "10m" });
+      res.json({
+        message: "Successful registration!",
+        access_token: token,
+        refresh_token: refreshToken
+      });
+    } catch (e) {
+      console.log("signup error", e);
+      res.send("Processing error.");
+    }
+  },
   authenticate: (req, res, next) => {
     const { username, password } = req.body;
     if (!username || !password) {
@@ -134,7 +172,7 @@ export const controllers = {
       });
     } catch (e) {
       console.error(e);
-      return res.status(500).json({ message: "Processing error." });
+      return res.status(500).json({ message: e.message });
     }
   }
 };
