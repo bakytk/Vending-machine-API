@@ -34,8 +34,7 @@ export const Product = mongoose => {
     },
     sellerId: {
       type: String,
-      required: true,
-      unique: true
+      required: true
     }
   });
   return mongoose.model("Product", productSchema);

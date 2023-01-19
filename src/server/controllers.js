@@ -1,5 +1,5 @@
 const { JWT_SECRET } = process.env;
-const DEPOSIT_COIN_VALUES = [5, 10, 20, 50, 100];
+const COIN_VALUES = [5, 10, 20, 50, 100];
 
 import db from "../db/index.js";
 import jwt from "jsonwebtoken";
@@ -124,14 +124,20 @@ export const controllers = {
           "One of 'productName, amountAvailable, cost' params not passed"
         );
       }
+      let productId = uuid();
       let product = new Product({
+        productId,
         productName,
         amountAvailable: Number(amountAvailable),
         cost: Number(cost),
         sellerId: userId
       });
+      //console.log("product", product);
       await product.save();
-      return res.status(200).json({ message: "Product successfully created!" });
+      return res.json({
+        message: "Product successfully created!",
+        productId
+      });
     } catch (e) {
       console.error("createProduct error", e);
       res.send(`createProduct error: ${e.message}`);
@@ -253,7 +259,7 @@ export const controllers = {
   deposit: async (req, res) => {
     try {
       let { coin } = req.body;
-      if (!DEPOSIT_COIN_VALUES.includes(Number(coin))) {
+      if (!COIN_VALUES.includes(Number(coin))) {
         throw new Error("Provided coin value is ineligible.");
       }
       let { userId, role } = req.decode;
@@ -283,6 +289,84 @@ export const controllers = {
     } catch (e) {
       console.error("deposit error", e);
       res.send(`deposit error: ${e.message}`);
+    }
+  },
+
+  buy: async (req, res) => {
+    try {
+      let { productId, amountProducts } = req.body;
+      if (!(productId && amountProducts)) {
+        throw new Error("'productId or amountProducts' params not passed");
+      }
+      let { userId, role } = req.decode;
+      if (!(userId && role === "buyer")) {
+        throw new Error("'userId or role' not available in token");
+      }
+
+      //Get User to fetch deposit
+      let user = await User.find({
+        userId
+      });
+      if (!(user.length > 0)) {
+        throw new Error("User not found!");
+      }
+      console.log("user", user[0]);
+      let { deposit } = user[0];
+
+      //check if there are enough items
+      let product = await Product.find({
+        productId
+      });
+      if (!(product.length > 0)) {
+        throw new Error("Product not found!");
+      }
+      console.log("product", product[0]);
+      let { cost, amountAvailable } = product[0];
+      if (amountAvailable < Number(amountProducts)) {
+        throw new Error("Insufficient product stock for the purchase.");
+      }
+
+      //check if deposit enough for purchase
+      let totalCost = cost * Number(amountProducts);
+      if (deposit < totalCost) {
+        throw new Error("Insufficient deposit for the purchase.");
+      }
+
+      //make transaction & reset deposit to zero after change flush
+      let remainder = deposit - totalCost;
+      function changeCoins(value) {
+        let len = COIN_VALUES.length;
+        let change = new Array(len).fill(0);
+        let coin, quotient, rem;
+        for (let i = len - 1; i > -1; i--) {
+          coin = COIN_VALUES[i];
+          quotient = Math.floor(value / coin);
+          if (quotient > 0) {
+            change[i] = quotient;
+            value = value % coin;
+          }
+        }
+        return change;
+      }
+      let change = changeCoins(remainder);
+      deposit = 0;
+      await User.findOneAndUpdate({ userId }, { deposit });
+
+      //debit Product stock
+      amountAvailable -= Number(amountProducts);
+      await User.findOneAndUpdate({ productId }, { amountAvailable });
+
+      return res.json({
+        message: "Purchase is successfully transacted!",
+        data: {
+          productId,
+          totalCost,
+          change
+        }
+      });
+    } catch (e) {
+      console.error("buy error", e);
+      res.send(`buy error: ${e.message}`);
     }
   }
 };
