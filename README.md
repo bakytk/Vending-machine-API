@@ -2,11 +2,11 @@
 
 ### Vending-API
 
-##### Start & testt
+##### Start & test
 
 ```
 # start containers
-docker-compose up --build [-d]
+docker-compose up --build
 # curl commands listed below
 
 # testing
