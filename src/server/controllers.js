@@ -64,7 +64,7 @@ export const controllers = {
         userId,
         role
       };
-      let token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "10m" });
+      let token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "30m" });
       res.json({
         message: "Successful registration!",
         access_token: token,
@@ -110,7 +110,7 @@ export const controllers = {
         userId,
         role
       };
-      let token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "10m" });
+      let token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "30m" });
       res.json({
         message: "Successful authentication!",
         access_token: token,
@@ -150,7 +150,7 @@ export const controllers = {
       await product.save();
       return res.json({
         message: "Product successfully created!",
-        productId
+        data: { productId }
       });
     } catch (e) {
       console.error("createProduct error", e);
@@ -277,7 +277,7 @@ export const controllers = {
         throw new Error("Provided coin value is ineligible.");
       }
       let { userId, role } = req.decode;
-      //console.log("userId, role", userId, role);
+      console.log("userId, role", userId, role);
       if (!(userId && role === "buyer")) {
         throw new Error("'userId or role' not validated");
       }
@@ -286,7 +286,7 @@ export const controllers = {
       let user = await User.find({
         userId
       });
-      //console.log("user", user);
+      console.log("user", user[0]);
       if (!(user.length > 0)) {
         throw new Error("User not found!");
       }
@@ -313,6 +313,7 @@ export const controllers = {
         throw new Error("'productId or amountProducts' params not passed");
       }
       let { userId, role } = req.decode;
+      console.log("productId, amountProducts");
       if (!(userId && role === "buyer")) {
         throw new Error("'userId or role' not validated");
       }

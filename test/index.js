@@ -22,7 +22,7 @@ before(function(done) {
     })
     .then(function(res) {
       BUYER_TOKEN = res.body.access_token;
-      done();
+      //done();
     })
     .catch(function(err) {
       done(err);
@@ -50,28 +50,32 @@ describe("vending-machine", function() {
       .post("/product")
       .set("authorization", `Bearer ${SELLER_TOKEN}`)
       .send({
-        productName: `Random-product-${Math.floor(Math.random() * 1000)}`,
+        productName: `Random-product-${Math.floor(Math.random() * 10000)}`,
         amountAvailable: 20,
         cost: 10
       })
       .end(function(err, res) {
-        //console.log("create product", res.should);
+        console.log("createProduct response", res.body.data);
+        PRODUCT_ID = res.body.data.productId;
         res.should.have.status(200);
         done();
       });
   });
+
   it("MAKE deposit", function(done) {
     agent
       .post("/deposit")
       .set("authorization", `Bearer ${BUYER_TOKEN}`)
       .send({
-        coin: 70
+        coin: 100 //70
       })
       .end(function(err, res) {
-        res.should.have.status(200);
+        console.log("deposit response", res.body.data);
+        res.body.data.deposit.should.gt(0);
         done();
       });
   });
+
   it("BUY product", function(done) {
     agent
       .post("/buy")
@@ -81,7 +85,7 @@ describe("vending-machine", function() {
         amountProducts: 2
       })
       .end(function(err, res) {
-        console.log("movies list", res.body);
+        console.log("buyProduct response:", res.body.data);
         res.should.have.status(200);
         done();
       });
