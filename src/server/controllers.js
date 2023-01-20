@@ -99,7 +99,9 @@ export const controllers = {
         signedIn
       } = user[0];
       if (signedIn) {
-        throw new Error("User already logged in.");
+        throw new Error(
+          "There is already an active session using your account"
+        );
       }
       if (db_password != password) {
         throw new Error("Incorrect password!");
@@ -144,7 +146,7 @@ export const controllers = {
         cost: Number(cost),
         sellerId: userId
       });
-      //console.log("product", product);
+      console.log("product", product);
       await product.save();
       return res.json({
         message: "Product successfully created!",
