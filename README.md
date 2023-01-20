@@ -2,6 +2,18 @@
 
 ### Vending-API
 
+##### Start & testt
+
+```
+# start containers
+docker-compose up --build [-d]
+# curl commands listed below
+
+# testing
+docker compose -f docker-compose.yml build vending_app
+docker compose -f docker-compose.yml run vending_app npm run test
+```
+
 ##### Guidelines
 
 - "seller" role to add, update or remove products
