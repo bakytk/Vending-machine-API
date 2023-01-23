@@ -23,7 +23,6 @@ before(function(done) {
     })
     .then(function(res) {
       BUYER_TOKEN = res.body.access_token;
-      console.log("BUYER_TOKEN", BUYER_TOKEN);
       //done();
     })
     .catch(function(err) {
@@ -40,7 +39,6 @@ before(function(done) {
     })
     .then(function(res) {
       SELLER_TOKEN = res.body.access_token;
-      console.log("SELLER_TOKEN", SELLER_TOKEN);
       done();
     })
     .catch(function(err) {
