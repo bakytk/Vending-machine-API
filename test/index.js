@@ -14,14 +14,16 @@ let PRODUCT_ID = "";
 
 before(function(done) {
   agent
-    .get("/user")
+    .post("/user")
     .set("content-type", "application/json")
     .send({
-      username: "bak_buyer",
-      password: "1234"
+      username: `Buyer-${Math.floor(Math.random() * 10000)}`,
+      password: "1234",
+      role: "buyer"
     })
     .then(function(res) {
       BUYER_TOKEN = res.body.access_token;
+      console.log("BUYER_TOKEN", BUYER_TOKEN);
       //done();
     })
     .catch(function(err) {
@@ -29,14 +31,16 @@ before(function(done) {
     });
 
   agent
-    .get("/user")
+    .post("/user")
     .set("content-type", "application/json")
     .send({
-      username: "bak_seller",
-      password: "1234"
+      username: `Seller-${Math.floor(Math.random() * 10000)}`,
+      password: "1234",
+      role: "seller"
     })
     .then(function(res) {
       SELLER_TOKEN = res.body.access_token;
+      console.log("SELLER_TOKEN", SELLER_TOKEN);
       done();
     })
     .catch(function(err) {
@@ -50,7 +54,7 @@ describe("vending-machine", function() {
       .post("/product")
       .set("authorization", `Bearer ${SELLER_TOKEN}`)
       .send({
-        productName: `Random-product-${Math.floor(Math.random() * 10000)}`,
+        productName: `Product-${Math.floor(Math.random() * 10000)}`,
         amountAvailable: 20,
         cost: 10
       })

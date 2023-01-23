@@ -42,7 +42,7 @@ export const controllers = {
       let { username, password, role } = req.body;
       //console.log("req.body", req.body);
       if (!(username && password && role)) {
-        throw new Error("Username or password absent!");
+        throw new Error("Either of 'username-password-role' is absent!");
       }
       if (!(role === "buyer" || role === "seller")) {
         throw new Error("Invalid role!");
