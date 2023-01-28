@@ -231,7 +231,7 @@ export const controllers = {
       return res.status(200).json({ message: "Product successfully updated!" });
     } catch (e) {
       console.error("putProduct", e);
-      res.send("putProduct error:", e.message);
+      res.send(`putProduct error: ${e.message}`);
     }
   },
 
@@ -370,7 +370,6 @@ export const controllers = {
       //debit Product stock
       amountAvailable -= Number(amountProducts);
       await User.findOneAndUpdate({ productId }, { amountAvailable });
-
       return res.json({
         message: "Purchase is successfully transacted!",
         data: {
