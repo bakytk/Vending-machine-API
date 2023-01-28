@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "sourceMap": true,
+    "noImplicitAny": false,
     "esModuleInterop": true,
     "downlevelIteration": true,
     "lib": ["esnext"],

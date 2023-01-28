@@ -1,4 +1,45 @@
-//add constraint: cost is multiple of 5's
+import { IUser, IProduct } from "../types/index";
+import { model, Schema, Model } from "mongoose";
+
+const UserSchema: Schema = new Schema<IUser>({
+  userId: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  username: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  deposit: {
+    type: Number,
+    // validate: {
+    //   validator: function(input) {
+    //     return typeof input === "number";
+    //   },
+    //   message: "Deposit must be a number"
+    // },
+    default: 0
+  },
+  role: {
+    type: String,
+    default: "buyer"
+  },
+  signedIn: {
+    type: Boolean,
+    default: false
+  },
+  refreshToken: {
+    type: String
+  }
+});
+
+export const User: Model<IUser> = model("User", UserSchema);
 
 export const Product = mongoose => {
   var productSchema = mongoose.Schema({
@@ -38,47 +79,4 @@ export const Product = mongoose => {
     }
   });
   return mongoose.model("Product", productSchema);
-};
-
-//add constraint that role is either "buyer" or "seller"
-
-export const User = mongoose => {
-  var userSchema = mongoose.Schema({
-    userId: {
-      type: String,
-      required: true,
-      unique: true
-    },
-    username: {
-      type: String,
-      required: true,
-      unique: true
-    },
-    password: {
-      type: String,
-      required: true
-    },
-    deposit: {
-      type: Number,
-      validate: {
-        validator: function(input) {
-          return typeof input === "number";
-        },
-        message: "Deposit must be a number"
-      },
-      default: 0
-    },
-    role: {
-      type: String,
-      default: "buyer"
-    },
-    signedIn: {
-      type: Boolean,
-      default: false
-    },
-    refreshToken: {
-      type: String
-    }
-  });
-  return mongoose.model("User", userSchema);
 };

@@ -1,7 +1,7 @@
-const { JWT_SECRET } = process.env;
-const COIN_VALUES = [5, 10, 20, 50, 100];
+const JWT_SECRET: string = process.env.JWT_SECRET || "";
+const COIN_VALUES: Number[] = [5, 10, 20, 50, 100];
 
-import db from "../db/index.js";
+import { TokenData } from "../types/index";
 import jwt from "jsonwebtoken";
 import { uuid } from "uuidv4";
 
@@ -9,31 +9,18 @@ if (!JWT_SECRET) {
   throw new Error("Missing JWT_SECRET env");
 }
 
-db.mongoose
-  .connect(
-    db.url,
-    {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    }
-  )
-  .then(() => {
-    console.log("Connected to the database2!");
-  })
-  .catch(err => {
-    console.log("Cannot connect to the database!", err);
-    process.exit();
-  });
-
-const User = db.user;
-const Product = db.product;
+import connect from "../db/connect";
+import { User } from "../db/models";
+import { IUser } from "../types/index";
+import { DB_URL } from "../db/config";
+connect({ DB_URL });
 
 export const controllers = {
-  fallback: (req, res) => {
+  fallback: async (req, res) => {
     return res.status(401).json({ message: "Invalid endpoint or method" });
   },
 
-  ping: (req, res) => {
+  ping: async (req, res) => {
     return res.status(200).json({ message: "Pong!" });
   },
 
@@ -47,8 +34,8 @@ export const controllers = {
       if (!(role === "buyer" || role === "seller")) {
         throw new Error("Invalid role!");
       }
-      let refreshToken = uuid();
-      let userId = uuid();
+      let refreshToken: string = uuid();
+      let userId: string = uuid();
       let data = {
         username,
         password,
@@ -56,15 +43,15 @@ export const controllers = {
         userId,
         role
       };
-      let user = new User({
+      let user: IUser = new User({
         ...data
       });
       await user.save();
-      let tokenData = {
+      let tokenData: TokenData = {
         userId,
         role
       };
-      let token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "30m" });
+      let token: string = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "30m" });
       res.json({
         message: "Successful registration!",
         access_token: token,
@@ -72,10 +59,11 @@ export const controllers = {
       });
     } catch (e) {
       console.log("signup error", e);
-      res.send(`Signup error: ${e.message}`);
+      res.send(`Signup error`);
     }
-  },
+  }
 
+  /*
   signin: async (req, res) => {
     try {
       let { username, password } = req.body;
@@ -432,4 +420,5 @@ export const controllers = {
       res.send(`logout error: ${e.message}`);
     }
   }
+  */
 };
