@@ -26,7 +26,7 @@ router.delete("/product/:id", confirmToken, controllers.deleteProduct);
 router.post("/deposit", confirmToken, controllers.deposit);
 router.post("/buy", confirmToken, controllers.buy);
 router.post("/reset", confirmToken, controllers.reset);
-// router.post("/logout/all", confirmToken, controllers.logout);
+router.post("/logout/all", confirmToken, controllers.logout);
 
 router.all("/*", controllers.fallback);
 router.use((error, _, res, __) => {

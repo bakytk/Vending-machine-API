@@ -93,7 +93,7 @@ export const controllers = {
       if (!(user.length > 0)) {
         throw new Error("Username not found!");
       }
-      //console.log("fetched user", result);
+      //console.log("fetched user", user);
       let { password: db_password, role, userId, deposit, signedIn } = user[0];
       if (signedIn) {
         throw new Error(
@@ -108,6 +108,7 @@ export const controllers = {
         role
       };
       let token: string = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "30m" });
+      await User.findOneAndUpdate({ userId }, { signedIn: true });
       res.json({
         message: "Successful authentication!",
         access_token: token,
@@ -130,6 +131,20 @@ export const controllers = {
       if (role !== "seller") {
         throw new Error("Action not valid for role");
       }
+
+      //check if signedIn
+      let user = await User.find({
+        userId
+      });
+      if (!(user.length > 0)) {
+        throw new Error("Username not found!");
+      }
+      let { signedIn } = user[0];
+      if (!signedIn) {
+        throw new Error("User not signedIn");
+      }
+
+      //product crud
       let { productName, amountAvailable, cost } = req.body;
       if (!(productName && amountAvailable && cost)) {
         throw new Error(
@@ -164,6 +179,25 @@ export const controllers = {
       } else {
         productId = productId.trim();
       }
+      let { userId, role } = req.decode;
+      //console.log("userId, role", userId, role);
+      if (!(userId && role === "seller")) {
+        throw new Error("'userId or role' not validated");
+      }
+
+      //check if signedIn
+      let user = await User.find({
+        userId
+      });
+      if (!(user.length > 0)) {
+        throw new Error("Username not found!");
+      }
+      let { signedIn } = user[0];
+      if (!signedIn) {
+        throw new Error("User not signedIn");
+      }
+
+      //product crud
       let product = await Product.find({ productId });
       if (!(product.length > 0)) {
         throw new Error("Product not found!");
@@ -190,6 +224,18 @@ export const controllers = {
       //console.log("userId, role", userId, role);
       if (!(userId && role === "seller")) {
         throw new Error("'userId or role' not validated");
+      }
+
+      //check if signedIn
+      let user = await User.find({
+        userId
+      });
+      if (!(user.length > 0)) {
+        throw new Error("Username not found!");
+      }
+      let { signedIn } = user[0];
+      if (!signedIn) {
+        throw new Error("User not signedIn");
       }
 
       //step 2. parse productName & search for it
@@ -222,7 +268,7 @@ export const controllers = {
       ];
       let updateData: any = {};
       for (let item of fields) {
-        console.log("item:", item);
+        //console.log("item:", item);
         if (req.body[item]) {
           if (item === "cost") {
             let cost: number = Number(req.body[item]);
@@ -254,6 +300,18 @@ export const controllers = {
       let { userId, role } = req.decode;
       if (!(userId && role === "seller")) {
         throw new Error("'userId or role' not validated");
+      }
+
+      //check if signedIn
+      let user = await User.find({
+        userId
+      });
+      if (!(user.length > 0)) {
+        throw new Error("Username not found!");
+      }
+      let { signedIn } = user[0];
+      if (!signedIn) {
+        throw new Error("User not signedIn");
       }
 
       //step 2. read productId
@@ -298,14 +356,19 @@ export const controllers = {
         throw new Error("'userId or role' not validated");
       }
 
-      //Get currentBalance of Deposit
+      //check if signedIn
       let user = await User.find({
         userId
       });
       if (!(user.length > 0)) {
-        throw new Error("User not found!");
+        throw new Error("Username not found!");
       }
-      let { deposit } = user[0];
+      let { signedIn, deposit } = user[0];
+      if (!signedIn) {
+        throw new Error("User not signedIn");
+      }
+
+      //update balance
       deposit += Number(coin);
       await User.findOneAndUpdate({ userId }, { deposit });
       return res.json({
@@ -333,14 +396,17 @@ export const controllers = {
         throw new Error("'userId or role' not validated");
       }
 
-      //Retrieve user deposit value
+      //check if signedIn
       let user = await User.find({
         userId
       });
       if (!(user.length > 0)) {
-        throw new Error("User not found!");
+        throw new Error("Username not found!");
       }
-      let { deposit } = user[0];
+      let { signedIn, deposit } = user[0];
+      if (!signedIn) {
+        throw new Error("User not signedIn");
+      }
 
       //check if there are enough items
       let product = await Product.find({
@@ -369,7 +435,7 @@ export const controllers = {
 
       //debit Product stock
       amountAvailable -= Number(amountProducts);
-      await User.findOneAndUpdate({ productId }, { amountAvailable });
+      await Product.findOneAndUpdate({ productId }, { amountAvailable });
       return res.json({
         message: "Purchase is successfully transacted!",
         data: {
@@ -392,13 +458,18 @@ export const controllers = {
         throw new Error("'userId or role' not validated");
       }
 
-      //Get currentBalance of Deposit
+      //check if signedIn
       let user = await User.find({
         userId
       });
       if (!(user.length > 0)) {
-        throw new Error("User not found!");
+        throw new Error("Username not found!");
       }
+      let { signedIn } = user[0];
+      if (!signedIn) {
+        throw new Error("User not signedIn");
+      }
+
       let deposit = 0;
       await User.findOneAndUpdate({ userId }, { deposit });
       return res.json({
@@ -408,9 +479,8 @@ export const controllers = {
       console.error("deposit error", e);
       res.send(`deposit error: ${e.message}`);
     }
-  }
+  },
 
-  /*
   logout: async (req, res) => {
     try {
       let { userId } = req.decode;
@@ -432,5 +502,4 @@ export const controllers = {
       res.send(`logout error: ${e.message}`);
     }
   }
-  */
 };
