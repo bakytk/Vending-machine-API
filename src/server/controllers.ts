@@ -10,10 +10,13 @@ if (!JWT_SECRET) {
 }
 
 import connect from "../db/connect";
-import { User } from "../db/models";
+import { User, Product } from "../db/models";
 import { IUser } from "../types/index";
 import { DB_URL } from "../db/config";
 connect({ DB_URL });
+
+//response correct statuses
+//getRequest: urlParams
 
 export const controllers = {
   fallback: async (req, res) => {
@@ -34,16 +37,14 @@ export const controllers = {
       if (!(role === "buyer" || role === "seller")) {
         throw new Error("Invalid role!");
       }
-      let refreshToken: string = uuid();
       let userId: string = uuid();
       let data = {
         username,
         password,
-        refreshToken,
         userId,
         role
       };
-      let user: IUser = new User({
+      let user = new User({
         ...data
       });
       await user.save();
@@ -55,15 +56,15 @@ export const controllers = {
       res.json({
         message: "Successful registration!",
         access_token: token,
-        refresh_token: refreshToken
+        userId
       });
     } catch (e) {
       console.log("signup error", e);
       res.send(`Signup error`);
     }
-  }
+  },
 
-  /*
+  //if signedIn, throw
   signin: async (req, res) => {
     try {
       let { username, password } = req.body;
@@ -79,13 +80,7 @@ export const controllers = {
         throw new Error("Username not found!");
       }
       //console.log("fetched user", result);
-      let {
-        password: db_password,
-        role,
-        refreshToken,
-        userId,
-        signedIn
-      } = user[0];
+      let { password: db_password, role, userId, deposit, signedIn } = user[0];
       if (signedIn) {
         throw new Error(
           "There is already an active session using your account"
@@ -94,15 +89,16 @@ export const controllers = {
       if (db_password != password) {
         throw new Error("Incorrect password!");
       }
-      let tokenData = {
+      let tokenData: TokenData = {
         userId,
         role
       };
-      let token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "30m" });
+      let token: string = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "30m" });
       res.json({
         message: "Successful authentication!",
         access_token: token,
-        refresh_token: refreshToken
+        userId,
+        deposit
       });
     } catch (e) {
       console.log("signin error", e);
@@ -126,7 +122,7 @@ export const controllers = {
           "One of 'productName, amountAvailable, cost' params not passed"
         );
       }
-      let productId = uuid();
+      let productId: string = uuid();
       let product = new Product({
         productId,
         productName,
@@ -148,25 +144,23 @@ export const controllers = {
 
   getProduct: async (req, res) => {
     try {
-      let { productName: name } = req.body;
-      if (!name) {
-        throw new Error("'productName' param not passed!");
+      let { id: productId } = req.params;
+      if (!productId) {
+        throw new Error("'productId' urlParam not passed!");
       } else {
-        name = name.trim();
+        productId = productId.trim();
       }
-      let product = await Product.find({
-        productName: name
-      });
-      //console.log("product", product);
+      let product = await Product.find({ productId });
       if (!(product.length > 0)) {
         throw new Error("Product not found!");
       }
-      let { productName, amountAvailable, cost } = product[0];
-      return res.status(200).json({
+      let { productName, amountAvailable, cost, sellerId } = product[0];
+      return res.json({
         data: {
           productName,
           amountAvailable,
-          cost
+          cost,
+          sellerId
         }
       });
     } catch (e) {
@@ -185,44 +179,56 @@ export const controllers = {
       }
 
       //step 2. parse productName & search for it
-      let { productName, amountAvailable, cost, sellerId } = req.body;
-      if (!productName) {
-        throw new Error("required 'productName' param not passed!");
+      let { id: productId } = req.params;
+      if (!productId) {
+        throw new Error("'productId' urlParam not passed!");
       } else {
-        productName = productName.trim();
+        productId = productId.trim();
       }
-      let product = await Product.find({
-        productName
-      });
-      //console.log("product", product);
+
+      //step 3. check if body not null & seller is authorized
+      if (!req.body) {
+        throw new Error("request body is empty!");
+      }
+      let product = await Product.find({ productId });
       if (!(product.length > 0)) {
         throw new Error("Product not found!");
       }
       let { sellerId: db_sellerId } = product[0];
-
-      //step 3. check role & requester is who created
       if (!(userId === db_sellerId && role === "seller")) {
         throw new Error("Either role or sellerId is ineligible!");
       }
 
       //step 4.update
+      let fields: string[] = [
+        "productName",
+        "amountAvailable",
+        "cost",
+        "sellerId"
+      ];
       let updateData = {};
-      if (cost) {
-        updateData["cost"] = Number(cost);
-      } else if (amountAvailable) {
-        updateData["amountAvailable"] = Number(amountAvailable);
+      for (let item of fields) {
+        console.log("item:", item);
+        if (req.body[item]) {
+          if (item === "cost" || item === "amountAvailable") {
+            updateData[item] = Number(req.body[item]);
+          } else {
+            updateData[item] = req.body[item];
+          }
+        }
       }
-      await Product.findOneAndUpdate(
-        { productName: productName },
-        { ...updateData }
-      );
+      if (Object.keys(updateData).length === 0) {
+        throw new Error(`Expected update params not received!`);
+      }
+      await Product.findOneAndUpdate({ productId }, { ...updateData });
       return res.status(200).json({ message: "Product successfully updated!" });
     } catch (e) {
       console.error("putProduct", e);
       res.send(`putProduct error: ${e.message}`);
     }
-  },
+  }
 
+  /*
   deleteProduct: async (req, res) => {
     try {
       //step 1. check if we have userId & role

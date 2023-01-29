@@ -4,8 +4,8 @@
     "noImplicitAny": false,
     "esModuleInterop": true,
     "downlevelIteration": true,
-    "lib": ["esnext"],
-    "strict": true,
+    "lib": ["es6", "dom"],
+    "strict": false,
     "outDir": "dist"
   },
   "include": ["src"]

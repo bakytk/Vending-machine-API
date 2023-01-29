@@ -7,21 +7,20 @@ import bodyParser from "body-parser";
 router.use(bodyParser.json());
 
 import { controllers } from "./controllers";
-//import { authenticate } from "./auth";
+import { authenticate } from "./auth";
 
 if (!JWT_SECRET) {
   throw new Error("Missing JWT_SECRET token");
 }
-//const confirmToken = authenticate(JWT_SECRET);
+const confirmToken = authenticate(JWT_SECRET);
 
-//router.post("/auth", authenticate);
 router.get("/alive", controllers.ping);
 router.post("/user", controllers.signup);
-// router.get("/user", controllers.signin);
-//
-// router.get("/product", controllers.getProduct);
-// router.post("/product", confirmToken, controllers.createProduct);
-// router.put("/product", confirmToken, controllers.putProduct);
+router.get("/user", controllers.signin);
+
+router.post("/product", confirmToken, controllers.createProduct);
+router.get("/product/:id", controllers.getProduct);
+router.put("/product/:id", confirmToken, controllers.putProduct);
 // router.delete("/product", confirmToken, controllers.deleteProduct);
 //
 // router.post("/deposit", confirmToken, controllers.deposit);

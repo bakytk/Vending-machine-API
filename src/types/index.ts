@@ -6,7 +6,7 @@ export interface IUser extends Document {
   password: string;
   deposit: number;
   role: string;
-  signedIn: bool;
+  signedIn: boolean;
   refreshToken: string;
 }
 
