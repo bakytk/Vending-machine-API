@@ -10,14 +10,10 @@ RUN npm run build
 # run step
 FROM node:14-alpine
 ENV NODE_ENV=production
-# more info: https://github.com/krallin/tini
-# RUN apk add --no-cache tini
 WORKDIR /usr/src/app
-# RUN chown node:node .
-# USER node
 COPY package*.json ./
 RUN npm install
+RUN ls -al
 COPY --from=builder /usr/src/app/dist/ dist/
 EXPOSE 15500
-ENTRYPOINT [ "node", "dist/server.js" ]
-#ENTRYPOINT [ "/sbin/tini","--", "node", "dist/server.js" ]
+ENTRYPOINT [ "node", "dist/server/index.js" ]

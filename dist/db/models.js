@@ -34,51 +34,44 @@ var UserSchema = new mongoose_1.Schema({
     signedIn: {
         type: Boolean,
         "default": false
-    },
-    refreshToken: {
-        type: String
     }
 });
-//Model<IUser>
-exports.User = (0, mongoose_1.model)("User", UserSchema);
-var Product = function (mongoose) {
-    var productSchema = mongoose.Schema({
-        productId: {
-            type: String,
-            required: true,
-            unique: true
-        },
-        amountAvailable: {
-            type: Number,
-            required: true,
-            validate: {
-                validator: function (input) {
-                    return typeof input === "number";
-                },
-                message: "amountAvailable must be a number"
-            }
-        },
-        cost: {
-            type: Number,
-            required: true,
-            validate: {
-                validator: function (input) {
-                    return input % 5 === 0 && input > 0;
-                },
-                message: "Deposit should be in multiple of 5"
-            }
-        },
-        productName: {
-            type: String,
-            required: true,
-            unique: true
-        },
-        sellerId: {
-            type: String,
-            required: true
+var ProductSchema = new mongoose_1.Schema({
+    productId: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    amountAvailable: {
+        type: Number,
+        required: true,
+        validate: {
+            validator: function (input) {
+                return typeof input === "number";
+            },
+            message: "amountAvailable must be a number"
         }
-    });
-    return mongoose.model("Product", productSchema);
-};
-exports.Product = Product;
+    },
+    cost: {
+        type: Number,
+        required: true,
+        validate: {
+            validator: function (input) {
+                return input % 5 === 0 && input > 0;
+            },
+            message: "Deposit should be in multiple of 5"
+        }
+    },
+    productName: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    sellerId: {
+        type: String,
+        required: true
+    }
+});
+exports.User = (0, mongoose_1.model)("User", UserSchema);
+exports.Product = (0, mongoose_1.model)("Product", ProductSchema);
 //# sourceMappingURL=models.js.map

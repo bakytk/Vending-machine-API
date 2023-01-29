@@ -42,10 +42,27 @@ exports.__esModule = true;
 var dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1["default"].config();
 var SERVER_PORT = Number(process.env.SERVER_PORT) || 15500;
+var REDIS_SECRET = process.env.REDIS_SECRET;
 var express_1 = __importDefault(require("express"));
 var app = (0, express_1["default"])();
+var express_session_1 = __importDefault(require("express-session"));
+var connect_redis_1 = __importDefault(require("connect-redis"));
+var redisClient_1 = require("../db/redisClient");
+var RedisStore = (0, connect_redis_1["default"])(express_session_1["default"]);
 var routes_1 = __importDefault(require("./routes"));
 app.use("/", routes_1["default"]);
+//Configure session middleware
+app.use((0, express_session_1["default"])({
+    store: new RedisStore({ client: redisClient_1.redisClient }),
+    secret: REDIS_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false,
+        httpOnly: true,
+        maxAge: 1000 * 60 * 30 // session max age in miliseconds
+    }
+}));
 app.listen(SERVER_PORT, function () { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         console.log("Server running on port: ".concat(SERVER_PORT));
