@@ -21,11 +21,11 @@ router.get("/user", controllers.signin);
 router.post("/product", confirmToken, controllers.createProduct);
 router.get("/product/:id", controllers.getProduct);
 router.put("/product/:id", confirmToken, controllers.putProduct);
-// router.delete("/product", confirmToken, controllers.deleteProduct);
-//
-// router.post("/deposit", confirmToken, controllers.deposit);
-// router.post("/buy", confirmToken, controllers.buy);
-// router.post("/reset", confirmToken, controllers.reset);
+router.delete("/product/:id", confirmToken, controllers.deleteProduct);
+
+router.post("/deposit", confirmToken, controllers.deposit);
+router.post("/buy", confirmToken, controllers.buy);
+router.post("/reset", confirmToken, controllers.reset);
 // router.post("/logout/all", confirmToken, controllers.logout);
 
 router.all("/*", controllers.fallback);

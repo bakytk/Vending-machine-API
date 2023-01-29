@@ -15,8 +15,22 @@ import { IUser } from "../types/index";
 import { DB_URL } from "../db/config";
 connect({ DB_URL });
 
-//response correct statuses
-//getRequest: urlParams
+function changeCoins(value: number): number[] {
+  let len: number = COIN_VALUES.length;
+  let change: number[] = new Array(len).fill(0);
+  let coin, quotient, rem;
+  for (let i = len - 1; i > -1; i--) {
+    coin = COIN_VALUES[i];
+    quotient = Math.floor(value / coin);
+    if (i === 0) {
+      change[0] = value;
+    } else if (quotient > 0) {
+      change[i] = quotient;
+      value = value % coin;
+    }
+  }
+  return change;
+}
 
 export const controllers = {
   fallback: async (req, res) => {
@@ -206,11 +220,17 @@ export const controllers = {
         "cost",
         "sellerId"
       ];
-      let updateData = {};
+      let updateData: any = {};
       for (let item of fields) {
         console.log("item:", item);
         if (req.body[item]) {
-          if (item === "cost" || item === "amountAvailable") {
+          if (item === "cost") {
+            let cost: number = Number(req.body[item]);
+            if (cost <= 0 || cost % 5 != 0) {
+              throw new Error(`Cost value must be positive & multiple of 5`);
+            }
+            updateData[item] = Number(req.body[item]);
+          } else if (item === "amountAvailable") {
             updateData[item] = Number(req.body[item]);
           } else {
             updateData[item] = req.body[item];
@@ -226,9 +246,8 @@ export const controllers = {
       console.error("putProduct", e);
       res.send(`putProduct error: ${e.message}`);
     }
-  }
+  },
 
-  /*
   deleteProduct: async (req, res) => {
     try {
       //step 1. check if we have userId & role
@@ -237,18 +256,18 @@ export const controllers = {
         throw new Error("'userId or role' not validated");
       }
 
-      //step 2. deleteProduct
-      let { productName } = req.body;
-      if (!productName) {
-        throw new Error("required 'productName' param not passed!");
+      //step 2. read productId
+      let { id: productId } = req.params;
+      if (!productId) {
+        throw new Error("'productId' urlParam not passed!");
       } else {
-        productName = productName.trim();
+        productId = productId.trim();
       }
       let product = await Product.find({
-        productName
+        productId
       });
       if (!(product.length > 0)) {
-        throw new Error("Product not found!");
+        throw new Error("ProductId not found!");
       }
 
       //check sellerId match
@@ -256,7 +275,7 @@ export const controllers = {
       if (!(userId === db_sellerId && role === "seller")) {
         throw new Error("Either role or sellerId is ineligible!");
       }
-      await Product.deleteOne({ productName });
+      await Product.deleteOne({ productId });
       return res.status(200).json({ message: "Product successfully deleted!" });
     } catch (e) {
       console.error("deleteProduct error", e);
@@ -267,11 +286,14 @@ export const controllers = {
   deposit: async (req, res) => {
     try {
       let { coin } = req.body;
+      if (!coin) {
+        throw new Error("'coin' value not passed.");
+      }
       if (!COIN_VALUES.includes(Number(coin))) {
         throw new Error("Provided coin value is ineligible.");
       }
       let { userId, role } = req.decode;
-      console.log("userId, role", userId, role);
+      //console.log("userId, role", userId, role);
       if (!(userId && role === "buyer")) {
         throw new Error("'userId or role' not validated");
       }
@@ -280,7 +302,6 @@ export const controllers = {
       let user = await User.find({
         userId
       });
-      console.log("user", user[0]);
       if (!(user.length > 0)) {
         throw new Error("User not found!");
       }
@@ -312,14 +333,13 @@ export const controllers = {
         throw new Error("'userId or role' not validated");
       }
 
-      //Get User to fetch deposit
+      //Retrieve user deposit value
       let user = await User.find({
         userId
       });
       if (!(user.length > 0)) {
         throw new Error("User not found!");
       }
-      //console.log("user", user[0]);
       let { deposit } = user[0];
 
       //check if there are enough items
@@ -343,20 +363,6 @@ export const controllers = {
 
       //make transaction & reset deposit to zero after change flush
       let remainder = deposit - totalCost;
-      function changeCoins(value) {
-        let len = COIN_VALUES.length;
-        let change = new Array(len).fill(0);
-        let coin, quotient, rem;
-        for (let i = len - 1; i > -1; i--) {
-          coin = COIN_VALUES[i];
-          quotient = Math.floor(value / coin);
-          if (quotient > 0) {
-            change[i] = quotient;
-            value = value % coin;
-          }
-        }
-        return change;
-      }
       let change = changeCoins(remainder);
       deposit = 0;
       await User.findOneAndUpdate({ userId }, { deposit });
@@ -390,7 +396,6 @@ export const controllers = {
       let user = await User.find({
         userId
       });
-      //console.log("reset user", user);
       if (!(user.length > 0)) {
         throw new Error("User not found!");
       }
@@ -403,8 +408,9 @@ export const controllers = {
       console.error("deposit error", e);
       res.send(`deposit error: ${e.message}`);
     }
-  },
+  }
 
+  /*
   logout: async (req, res) => {
     try {
       let { userId } = req.decode;
