@@ -12,19 +12,16 @@ services:
         target: 15500
     environment:
       - JWT_SECRET=$JWT_SECRET
+      - SESS_SECRET=$SESS_SECRET
       - DB_HOST=mongo_db
       - DB_NAME=$DB_NAME
       - DB_PORT=$DB_PORT
       - DB_USER=$DB_USER
       - DB_PWD=$DB_PWD
-      - REDIS_HOST=cache
-      - REDIS_PORT=6379
-      - REDIS_SECRET=$REDIS_SECRET
     # depends_on:
     #   - mongo_db
     links:
       - mongo_db
-      - cache
 
   mongo_db:
     image: mongo
@@ -39,18 +36,5 @@ services:
     volumes:
       - vending_mongo:/data/db
 
-  cache:
-    image: redis:6.2-alpine
-    restart: always
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
-    ports:
-      - '6379:6379'
-    #entrypoint: redis-server --appendonly yes
-    volumes:
-      - vending_cache:/data
-
 volumes:
   vending_mongo:
-  vending_cache:
-    driver: local

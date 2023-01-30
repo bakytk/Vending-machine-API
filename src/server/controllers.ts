@@ -38,6 +38,7 @@ export const controllers = {
   },
 
   ping: async (req, res) => {
+    console.log("ping req", req);
     return res.status(200).json({ message: "Pong!" });
   },
 
@@ -81,7 +82,7 @@ export const controllers = {
   //if signedIn, throw
   signin: async (req, res) => {
     try {
-      let { username, password } = req.body;
+      let { username, password } = req.query;
       if (!(username && password)) {
         throw new Error("Username or password absent!");
       }
@@ -89,7 +90,8 @@ export const controllers = {
         username,
         password
       });
-      console.log("session", req.session);
+      console.log("session:", req.session);
+      req.session.username = username;
       if (!(user.length > 0)) {
         throw new Error("Username not found!");
       }
