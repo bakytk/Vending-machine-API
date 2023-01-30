@@ -163,14 +163,16 @@ exports.controllers = {
                         })];
                 case 1:
                     user = _c.sent();
-                    //console.log("user", user);
+                    console.log("session", req.session);
                     if (!(user.length > 0)) {
                         throw new Error("Username not found!");
                     }
                     _b = user[0], db_password = _b.password, role = _b.role, userId = _b.userId, deposit = _b.deposit, signedIn = _b.signedIn;
-                    if (signedIn) {
-                        throw new Error("There is already an active session using your account");
-                    }
+                    // if (signedIn) {
+                    //   throw new Error(
+                    //     "There is already an active session using your account"
+                    //   );
+                    // }
                     if (db_password != password) {
                         throw new Error("Incorrect password!");
                     }

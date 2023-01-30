@@ -1,30 +1,45 @@
 const REDIS_HOST: string = process.env.REDIS_HOST;
-const REDIS_PORT: string = process.env.REDIS_PORT;
+const REDIS_PORT: number = parseInt(process.env.REDIS_PORT);
 
-import { createClient, RedisClientOptions, RedisClientType } from "redis";
+import redis, { createClient, RedisClientType } from "redis";
 
-const factory = (): RedisClientType => {
-  return createClient({
-    url: `redis://${REDIS_HOST}:${REDIS_PORT}`
-  });
+const client = redis.createClient({
+  host: process.env.REDIS_HOST,
+  port: Number(process.env.REDIS_PORT),
+  password: process.env.REDIS_PASS || undefined
+});
+
+// console.log("redis", redis);
+// console.log("redis.keys: ", Object.keys(redis));
+
+export const redisConnect = async () => {
+  await client.connect();
+  client
+    .on("connect", console.log("Redis connected."))
+    .on("error", console.error(`Redis connection error.`));
+  return client;
 };
 
-// import { createClient} from "redis";
-// type RedisClientType = ReturnType<typeof createClient>;
-// type RedisClientOptions = Parameters<typeof createClient>[0];
-
-// const factory = (options: RedisClientOptions): RedisClientType => {
-//   return createClient(options);
-// };
-
-export const redisClient: RedisClientType = factory();
-
-// export type RedisClientType = ReturnType<typeof createClient>;
-//
-// export async function startRedis(): Promise<RedisClientType> {
-//   const redis: RedisClientType = createClient({
+// const factory = (): RedisClientType => {
+//   const client = createClient({
 //     url: `redis://${REDIS_HOST}:${REDIS_PORT}`
 //   });
-//   await redis.connect();
-//   return redis;
-// }
+//   client.set("myKey", 123);
+//   client.get("myKey", value => {
+//     console.log("cb keyValue", value);
+//   });
+//   //client.connect();
+//   return client;
+// };
+
+//export const redisClient: RedisClientType = factory();
+
+/*
+https://stackoverflow.com/questions/70805943/redis-redis-createclient-in-typescript
+
+  socket: {
+      host: process.env.REDIS_HOST,
+      port: parseInt(process.env.REDIS_PORT)
+  },
+  password: process.env.REDIS_PW
+*/

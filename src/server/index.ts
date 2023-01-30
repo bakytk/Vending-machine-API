@@ -8,18 +8,13 @@ import express from "express";
 const app = express();
 
 import session from "express-session";
-import connectRedis from "connect-redis";
-import { redisClient } from "../db/redisClient";
-const RedisStore = connectRedis(session);
-
 import router from "./routes";
 app.use("/", router);
 
 //Configure session middleware
 app.use(
   session({
-    store: new RedisStore({ client: redisClient }),
-    secret: REDIS_SECRET,
+    //store: new RedisStore({ client: redisClient }),
     resave: false,
     saveUninitialized: false,
     cookie: {

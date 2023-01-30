@@ -89,17 +89,17 @@ export const controllers = {
         username,
         password
       });
-      //console.log("user", user);
+      console.log("session", req.session);
       if (!(user.length > 0)) {
         throw new Error("Username not found!");
       }
       //console.log("fetched user", user);
       let { password: db_password, role, userId, deposit, signedIn } = user[0];
-      if (signedIn) {
-        throw new Error(
-          "There is already an active session using your account"
-        );
-      }
+      // if (signedIn) {
+      //   throw new Error(
+      //     "There is already an active session using your account"
+      //   );
+      // }
       if (db_password != password) {
         throw new Error("Incorrect password!");
       }
