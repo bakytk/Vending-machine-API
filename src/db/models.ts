@@ -29,10 +29,6 @@ const UserSchema: Schema = new Schema<IUser>({
   role: {
     type: String,
     default: "buyer"
-  },
-  signedIn: {
-    type: Boolean,
-    default: false
   }
 });
 

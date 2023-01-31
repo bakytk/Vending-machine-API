@@ -15,7 +15,7 @@ app.use(
   session({
     secret: SESS_SECRET,
     genid: function(req) {
-      console.log("session.id created");
+      //console.log("session.id created");
       return uuid(); // use UUIDs for session IDs
     },
     name: "vendingSession",

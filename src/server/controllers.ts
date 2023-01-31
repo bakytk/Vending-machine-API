@@ -90,27 +90,25 @@ export const controllers = {
         username,
         password
       });
-      console.log("session:", req.session);
-      req.session.username = username;
       if (!(user.length > 0)) {
         throw new Error("Username not found!");
       }
       //console.log("fetched user", user);
-      let { password: db_password, role, userId, deposit, signedIn } = user[0];
-      // if (signedIn) {
-      //   throw new Error(
-      //     "There is already an active session using your account"
-      //   );
-      // }
+      let { password: db_password, role, userId, deposit } = user[0];
       if (db_password != password) {
         throw new Error("Incorrect password!");
       }
+      if (req.session.userid) {
+        throw new Error(
+          "There is already an active session using your account. "
+        );
+      }
+      req.session.userid = userId;
       let tokenData: TokenData = {
         userId,
         role
       };
       let token: string = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "30m" });
-      await User.findOneAndUpdate({ userId }, { signedIn: true });
       res.json({
         message: "Successful authentication!",
         access_token: token,
@@ -126,7 +124,6 @@ export const controllers = {
   createProduct: async (req, res) => {
     try {
       let { userId, role } = req.decode;
-      //console.log("userId, role", userId, role);
       if (!(userId && role === "seller")) {
         throw new Error("'userId or role' not validated");
       }
@@ -134,16 +131,9 @@ export const controllers = {
         throw new Error("Action not valid for role");
       }
 
-      //check if signedIn
-      let user = await User.find({
-        userId
-      });
-      if (!(user.length > 0)) {
-        throw new Error("Username not found!");
-      }
-      let { signedIn } = user[0];
-      if (!signedIn) {
-        throw new Error("User not signedIn");
+      //checkSession
+      if (!(req.session.userid && req.session.userid === userId)) {
+        throw new Error("Session not authorized.");
       }
 
       //product crud
@@ -187,16 +177,9 @@ export const controllers = {
         throw new Error("'userId or role' not validated");
       }
 
-      //check if signedIn
-      let user = await User.find({
-        userId
-      });
-      if (!(user.length > 0)) {
-        throw new Error("Username not found!");
-      }
-      let { signedIn } = user[0];
-      if (!signedIn) {
-        throw new Error("User not signedIn");
+      //checkSession
+      if (!(req.session.userid && req.session.userid === userId)) {
+        throw new Error("Session not authorized.");
       }
 
       //product crud
@@ -228,16 +211,9 @@ export const controllers = {
         throw new Error("'userId or role' not validated");
       }
 
-      //check if signedIn
-      let user = await User.find({
-        userId
-      });
-      if (!(user.length > 0)) {
-        throw new Error("Username not found!");
-      }
-      let { signedIn } = user[0];
-      if (!signedIn) {
-        throw new Error("User not signedIn");
+      //checkSession
+      if (!(req.session.userid && req.session.userid === userId)) {
+        throw new Error("Session not authorized.");
       }
 
       //step 2. parse productName & search for it
@@ -304,16 +280,9 @@ export const controllers = {
         throw new Error("'userId or role' not validated");
       }
 
-      //check if signedIn
-      let user = await User.find({
-        userId
-      });
-      if (!(user.length > 0)) {
-        throw new Error("Username not found!");
-      }
-      let { signedIn } = user[0];
-      if (!signedIn) {
-        throw new Error("User not signedIn");
+      //checkSession
+      if (!(req.session.userid && req.session.userid === userId)) {
+        throw new Error("Session not authorized.");
       }
 
       //step 2. read productId
@@ -358,19 +327,17 @@ export const controllers = {
         throw new Error("'userId or role' not validated");
       }
 
-      //check if signedIn
-      let user = await User.find({
-        userId
-      });
-      if (!(user.length > 0)) {
-        throw new Error("Username not found!");
-      }
-      let { signedIn, deposit } = user[0];
-      if (!signedIn) {
-        throw new Error("User not signedIn");
+      //checkSession
+      if (!(req.session.userid && req.session.userid === userId)) {
+        throw new Error("Session not authorized.");
       }
 
       //update balance
+      let user = await User.find({ userId });
+      if (!(user.length > 0)) {
+        throw new Error("UserId not found!");
+      }
+      let { deposit } = user[0];
       deposit += Number(coin);
       await User.findOneAndUpdate({ userId }, { deposit });
       return res.json({
@@ -398,16 +365,9 @@ export const controllers = {
         throw new Error("'userId or role' not validated");
       }
 
-      //check if signedIn
-      let user = await User.find({
-        userId
-      });
-      if (!(user.length > 0)) {
-        throw new Error("Username not found!");
-      }
-      let { signedIn, deposit } = user[0];
-      if (!signedIn) {
-        throw new Error("User not signedIn");
+      //checkSession
+      if (!(req.session.userid && req.session.userid === userId)) {
+        throw new Error("Session not authorized.");
       }
 
       //check if there are enough items
@@ -424,6 +384,11 @@ export const controllers = {
       }
 
       //check if deposit enough for purchase
+      let user = await User.find({ userId });
+      if (!(user.length > 0)) {
+        throw new Error("UserId not found!");
+      }
+      let { deposit } = user[0];
       let totalCost = cost * Number(amountProducts);
       if (deposit < totalCost) {
         throw new Error("Insufficient deposit for the purchase.");
@@ -460,16 +425,9 @@ export const controllers = {
         throw new Error("'userId or role' not validated");
       }
 
-      //check if signedIn
-      let user = await User.find({
-        userId
-      });
-      if (!(user.length > 0)) {
-        throw new Error("Username not found!");
-      }
-      let { signedIn } = user[0];
-      if (!signedIn) {
-        throw new Error("User not signedIn");
+      //checkSession
+      if (!(req.session.userid && req.session.userid === userId)) {
+        throw new Error("Session not authorized.");
       }
 
       let deposit = 0;
@@ -489,13 +447,7 @@ export const controllers = {
       if (!userId) {
         throw new Error("'userId' not validated");
       }
-      let user = await User.find({
-        userId
-      });
-      if (!(user.length > 0)) {
-        throw new Error("User not found!");
-      }
-      await User.findOneAndUpdate({ userId }, { signedIn: false });
+      req.session.destroy();
       return res.json({
         message: "User logged out!"
       });
