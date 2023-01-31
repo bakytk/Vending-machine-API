@@ -30,10 +30,6 @@ var UserSchema = new mongoose_1.Schema({
     role: {
         type: String,
         "default": "buyer"
-    },
-    signedIn: {
-        type: Boolean,
-        "default": false
     }
 });
 var ProductSchema = new mongoose_1.Schema({

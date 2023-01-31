@@ -64,6 +64,7 @@ exports.__esModule = true;
 exports.controllers = void 0;
 var JWT_SECRET = process.env.JWT_SECRET || "";
 var COIN_VALUES = [5, 10, 20, 50, 100];
+var constants_1 = require("./constants");
 var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 var uuidv4_1 = require("uuidv4");
 if (!JWT_SECRET) {
@@ -74,6 +75,9 @@ var models_1 = require("../db/models");
 var config_1 = require("../db/config");
 (0, connect_1["default"])({ DB_URL: config_1.DB_URL });
 function changeCoins(value) {
+    /*
+      greedy approach: largest coins first
+    */
     var len = COIN_VALUES.length;
     var change = new Array(len).fill(0);
     var coin, quotient, rem;
@@ -81,11 +85,11 @@ function changeCoins(value) {
         coin = COIN_VALUES[i];
         quotient = Math.floor(value / coin);
         if (i === 0) {
-            change[0] = value;
+            change[0] = Math.floor(value / coin);
         }
         else if (quotient > 0) {
             change[i] = quotient;
-            value = value % coin;
+            value = value - quotient * coin;
         }
     }
     return change;
@@ -98,6 +102,7 @@ exports.controllers = {
     }); },
     ping: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_a) {
+            console.log("ping req", req);
             return [2 /*return*/, res.status(200).json({ message: "Pong!" })];
         });
     }); },
@@ -148,12 +153,12 @@ exports.controllers = {
     }); },
     //if signedIn, throw
     signin: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-        var _a, username, password, user, _b, db_password, role, userId, deposit, signedIn, tokenData, token, e_2;
+        var _a, username, password, user, _b, db_password, role, userId, deposit, tokenData, token, e_2;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
-                    _c.trys.push([0, 3, , 4]);
-                    _a = req.body, username = _a.username, password = _a.password;
+                    _c.trys.push([0, 2, , 3]);
+                    _a = req.query, username = _a.username, password = _a.password;
                     if (!(username && password)) {
                         throw new Error("Username or password absent!");
                     }
@@ -163,68 +168,54 @@ exports.controllers = {
                         })];
                 case 1:
                     user = _c.sent();
-                    console.log("session", req.session);
                     if (!(user.length > 0)) {
                         throw new Error("Username not found!");
                     }
-                    _b = user[0], db_password = _b.password, role = _b.role, userId = _b.userId, deposit = _b.deposit, signedIn = _b.signedIn;
-                    // if (signedIn) {
-                    //   throw new Error(
-                    //     "There is already an active session using your account"
-                    //   );
-                    // }
+                    _b = user[0], db_password = _b.password, role = _b.role, userId = _b.userId, deposit = _b.deposit;
                     if (db_password != password) {
                         throw new Error("Incorrect password!");
                     }
+                    if (req.session.userid) {
+                        throw new Error("There is already an active session using your account. ");
+                    }
+                    req.session.userid = userId;
                     tokenData = {
                         userId: userId,
                         role: role
                     };
                     token = jsonwebtoken_1["default"].sign(tokenData, JWT_SECRET, { expiresIn: "30m" });
-                    return [4 /*yield*/, models_1.User.findOneAndUpdate({ userId: userId }, { signedIn: true })];
-                case 2:
-                    _c.sent();
                     res.json({
                         message: "Successful authentication!",
                         access_token: token,
                         userId: userId,
                         deposit: deposit
                     });
-                    return [3 /*break*/, 4];
-                case 3:
+                    return [3 /*break*/, 3];
+                case 2:
                     e_2 = _c.sent();
                     console.log("signin error", e_2);
                     res.send("Signin error: ".concat(e_2.message));
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
             }
         });
     }); },
     createProduct: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-        var _a, userId, role, user, signedIn, _b, productName, amountAvailable, cost, productId, product, e_3;
+        var _a, userId, role, _b, productName, amountAvailable, cost, productId, product, e_3;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
-                    _c.trys.push([0, 3, , 4]);
+                    _c.trys.push([0, 2, , 3]);
                     _a = req.decode, userId = _a.userId, role = _a.role;
-                    //console.log("userId, role", userId, role);
                     if (!(userId && role === "seller")) {
                         throw new Error("'userId or role' not validated");
                     }
                     if (role !== "seller") {
                         throw new Error("Action not valid for role");
                     }
-                    return [4 /*yield*/, models_1.User.find({
-                            userId: userId
-                        })];
-                case 1:
-                    user = _c.sent();
-                    if (!(user.length > 0)) {
-                        throw new Error("Username not found!");
-                    }
-                    signedIn = user[0].signedIn;
-                    if (!signedIn) {
-                        throw new Error("User not signedIn");
+                    //checkSession
+                    if (!(req.session.userid && req.session.userid === userId)) {
+                        throw new Error("Session not authorized.");
                     }
                     _b = req.body, productName = _b.productName, amountAvailable = _b.amountAvailable, cost = _b.cost;
                     if (!(productName && amountAvailable && cost)) {
@@ -240,27 +231,27 @@ exports.controllers = {
                     });
                     console.log("product", product);
                     return [4 /*yield*/, product.save()];
-                case 2:
+                case 1:
                     _c.sent();
                     return [2 /*return*/, res.json({
                             message: "Product successfully created!",
                             data: { productId: productId }
                         })];
-                case 3:
+                case 2:
                     e_3 = _c.sent();
                     console.error("createProduct error", e_3);
                     res.send("createProduct error: ".concat(e_3.message));
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
             }
         });
     }); },
     getProduct: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-        var productId, _a, userId, role, user, signedIn, product, _b, productName, amountAvailable, cost, sellerId, e_4;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var productId, product, _a, productName, amountAvailable, cost, sellerId, e_4;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    _c.trys.push([0, 3, , 4]);
+                    _b.trys.push([0, 2, , 3]);
                     productId = req.params.id;
                     if (!productId) {
                         throw new Error("'productId' urlParam not passed!");
@@ -268,70 +259,48 @@ exports.controllers = {
                     else {
                         productId = productId.trim();
                     }
-                    _a = req.decode, userId = _a.userId, role = _a.role;
-                    //console.log("userId, role", userId, role);
-                    if (!(userId && role === "seller")) {
-                        throw new Error("'userId or role' not validated");
-                    }
-                    return [4 /*yield*/, models_1.User.find({
-                            userId: userId
-                        })];
-                case 1:
-                    user = _c.sent();
-                    if (!(user.length > 0)) {
-                        throw new Error("Username not found!");
-                    }
-                    signedIn = user[0].signedIn;
-                    if (!signedIn) {
-                        throw new Error("User not signedIn");
+                    //checkSession
+                    if (!req.session.userid) {
+                        throw new Error("Session not authorized.");
                     }
                     return [4 /*yield*/, models_1.Product.find({ productId: productId })];
-                case 2:
-                    product = _c.sent();
+                case 1:
+                    product = _b.sent();
                     if (!(product.length > 0)) {
                         throw new Error("Product not found!");
                     }
-                    _b = product[0], productName = _b.productName, amountAvailable = _b.amountAvailable, cost = _b.cost, sellerId = _b.sellerId;
+                    _a = product[0], productName = _a.productName, amountAvailable = _a.amountAvailable, cost = _a.cost, sellerId = _a.sellerId;
                     return [2 /*return*/, res.json({
                             data: {
                                 productName: productName,
                                 amountAvailable: amountAvailable,
-                                cost: cost,
-                                sellerId: sellerId
+                                cost: cost
                             }
                         })];
-                case 3:
-                    e_4 = _c.sent();
+                case 2:
+                    e_4 = _b.sent();
                     console.error("getProduct error", e_4);
                     res.send("getProduct error: ".concat(e_4.message));
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
             }
         });
     }); },
     putProduct: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-        var _a, userId, role, user, signedIn, productId, product, db_sellerId, fields, updateData, fields_1, fields_1_1, item, cost, e_5;
+        var _a, userId, role, productId, product, db_sellerId, fields, updateData, fields_1, fields_1_1, item, cost, e_5;
         var e_6, _b;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
-                    _c.trys.push([0, 4, , 5]);
+                    _c.trys.push([0, 3, , 4]);
                     _a = req.decode, userId = _a.userId, role = _a.role;
                     //console.log("userId, role", userId, role);
                     if (!(userId && role === "seller")) {
                         throw new Error("'userId or role' not validated");
                     }
-                    return [4 /*yield*/, models_1.User.find({
-                            userId: userId
-                        })];
-                case 1:
-                    user = _c.sent();
-                    if (!(user.length > 0)) {
-                        throw new Error("Username not found!");
-                    }
-                    signedIn = user[0].signedIn;
-                    if (!signedIn) {
-                        throw new Error("User not signedIn");
+                    //checkSession
+                    if (!(req.session.userid && req.session.userid === userId)) {
+                        throw new Error("Session not authorized.");
                     }
                     productId = req.params.id;
                     if (!productId) {
@@ -345,7 +314,7 @@ exports.controllers = {
                         throw new Error("request body is empty!");
                     }
                     return [4 /*yield*/, models_1.Product.find({ productId: productId })];
-                case 2:
+                case 1:
                     product = _c.sent();
                     if (!(product.length > 0)) {
                         throw new Error("Product not found!");
@@ -393,39 +362,31 @@ exports.controllers = {
                         throw new Error("Expected update params not received!");
                     }
                     return [4 /*yield*/, models_1.Product.findOneAndUpdate({ productId: productId }, __assign({}, updateData))];
-                case 3:
+                case 2:
                     _c.sent();
                     return [2 /*return*/, res.status(200).json({ message: "Product successfully updated!" })];
-                case 4:
+                case 3:
                     e_5 = _c.sent();
                     console.error("putProduct", e_5);
                     res.send("putProduct error: ".concat(e_5.message));
-                    return [3 /*break*/, 5];
-                case 5: return [2 /*return*/];
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
             }
         });
     }); },
     deleteProduct: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-        var _a, userId, role, user, signedIn, productId, product, db_sellerId, e_7;
+        var _a, userId, role, productId, product, db_sellerId, e_7;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    _b.trys.push([0, 4, , 5]);
+                    _b.trys.push([0, 3, , 4]);
                     _a = req.decode, userId = _a.userId, role = _a.role;
                     if (!(userId && role === "seller")) {
                         throw new Error("'userId or role' not validated");
                     }
-                    return [4 /*yield*/, models_1.User.find({
-                            userId: userId
-                        })];
-                case 1:
-                    user = _b.sent();
-                    if (!(user.length > 0)) {
-                        throw new Error("Username not found!");
-                    }
-                    signedIn = user[0].signedIn;
-                    if (!signedIn) {
-                        throw new Error("User not signedIn");
+                    //checkSession
+                    if (!(req.session.userid && req.session.userid === userId)) {
+                        throw new Error("Session not authorized.");
                     }
                     productId = req.params.id;
                     if (!productId) {
@@ -437,7 +398,7 @@ exports.controllers = {
                     return [4 /*yield*/, models_1.Product.find({
                             productId: productId
                         })];
-                case 2:
+                case 1:
                     product = _b.sent();
                     if (!(product.length > 0)) {
                         throw new Error("ProductId not found!");
@@ -447,24 +408,24 @@ exports.controllers = {
                         throw new Error("Either role or sellerId is ineligible!");
                     }
                     return [4 /*yield*/, models_1.Product.deleteOne({ productId: productId })];
-                case 3:
+                case 2:
                     _b.sent();
                     return [2 /*return*/, res.status(200).json({ message: "Product successfully deleted!" })];
-                case 4:
+                case 3:
                     e_7 = _b.sent();
                     console.error("deleteProduct error", e_7);
                     res.send("deleteProduct error: ".concat(e_7.message));
-                    return [3 /*break*/, 5];
-                case 5: return [2 /*return*/];
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
             }
         });
     }); },
     deposit: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-        var coin, _a, userId, role, user, _b, signedIn, deposit, e_8;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var coin, _a, userId, role, user, deposit, e_8;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    _c.trys.push([0, 3, , 4]);
+                    _b.trys.push([0, 3, , 4]);
                     coin = req.body.coin;
                     if (!coin) {
                         throw new Error("'coin' value not passed.");
@@ -477,23 +438,21 @@ exports.controllers = {
                     if (!(userId && role === "buyer")) {
                         throw new Error("'userId or role' not validated");
                     }
-                    return [4 /*yield*/, models_1.User.find({
-                            userId: userId
-                        })];
+                    //checkSession
+                    if (!(req.session.userid && req.session.userid === userId)) {
+                        throw new Error("Session not authorized.");
+                    }
+                    return [4 /*yield*/, models_1.User.find({ userId: userId })];
                 case 1:
-                    user = _c.sent();
+                    user = _b.sent();
                     if (!(user.length > 0)) {
-                        throw new Error("Username not found!");
+                        throw new Error("UserId not found!");
                     }
-                    _b = user[0], signedIn = _b.signedIn, deposit = _b.deposit;
-                    if (!signedIn) {
-                        throw new Error("User not signedIn");
-                    }
-                    //update balance
+                    deposit = user[0].deposit;
                     deposit += Number(coin);
                     return [4 /*yield*/, models_1.User.findOneAndUpdate({ userId: userId }, { deposit: deposit })];
                 case 2:
-                    _c.sent();
+                    _b.sent();
                     return [2 /*return*/, res.json({
                             message: "Coin successfully deposited!",
                             data: {
@@ -502,7 +461,7 @@ exports.controllers = {
                             }
                         })];
                 case 3:
-                    e_8 = _c.sent();
+                    e_8 = _b.sent();
                     console.error("deposit error", e_8);
                     res.send("deposit error: ".concat(e_8.message));
                     return [3 /*break*/, 4];
@@ -511,11 +470,11 @@ exports.controllers = {
         });
     }); },
     buy: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-        var _a, productId, amountProducts, _b, userId, role, user, _c, signedIn, deposit, product, _d, cost, amountAvailable, totalCost, remainder, change, e_9;
-        return __generator(this, function (_e) {
-            switch (_e.label) {
+        var _a, productId, amountProducts, _b, userId, role, product, _c, cost, amountAvailable, user, deposit, totalCost, remainder, change, e_9;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0:
-                    _e.trys.push([0, 5, , 6]);
+                    _d.trys.push([0, 5, , 6]);
                     _a = req.body, productId = _a.productId, amountProducts = _a.amountProducts;
                     if (!(productId && amountProducts)) {
                         throw new Error("'productId or amountProducts' params not passed");
@@ -525,30 +484,29 @@ exports.controllers = {
                     if (!(userId && role === "buyer")) {
                         throw new Error("'userId or role' not validated");
                     }
-                    return [4 /*yield*/, models_1.User.find({
-                            userId: userId
-                        })];
-                case 1:
-                    user = _e.sent();
-                    if (!(user.length > 0)) {
-                        throw new Error("Username not found!");
-                    }
-                    _c = user[0], signedIn = _c.signedIn, deposit = _c.deposit;
-                    if (!signedIn) {
-                        throw new Error("User not signedIn");
+                    //checkSession
+                    if (!(req.session.userid && req.session.userid === userId)) {
+                        throw new Error("Session not authorized.");
                     }
                     return [4 /*yield*/, models_1.Product.find({
                             productId: productId
                         })];
-                case 2:
-                    product = _e.sent();
+                case 1:
+                    product = _d.sent();
                     if (!(product.length > 0)) {
                         throw new Error("Product not found!");
                     }
-                    _d = product[0], cost = _d.cost, amountAvailable = _d.amountAvailable;
+                    _c = product[0], cost = _c.cost, amountAvailable = _c.amountAvailable;
                     if (amountAvailable < Number(amountProducts)) {
                         throw new Error("Insufficient product stock for the purchase.");
                     }
+                    return [4 /*yield*/, models_1.User.find({ userId: userId })];
+                case 2:
+                    user = _d.sent();
+                    if (!(user.length > 0)) {
+                        throw new Error("UserId not found!");
+                    }
+                    deposit = user[0].deposit;
                     totalCost = cost * Number(amountProducts);
                     if (deposit < totalCost) {
                         throw new Error("Insufficient deposit for the purchase.");
@@ -558,12 +516,12 @@ exports.controllers = {
                     deposit = 0;
                     return [4 /*yield*/, models_1.User.findOneAndUpdate({ userId: userId }, { deposit: deposit })];
                 case 3:
-                    _e.sent();
+                    _d.sent();
                     //debit Product stock
                     amountAvailable -= Number(amountProducts);
                     return [4 /*yield*/, models_1.Product.findOneAndUpdate({ productId: productId }, { amountAvailable: amountAvailable })];
                 case 4:
-                    _e.sent();
+                    _d.sent();
                     return [2 /*return*/, res.json({
                             message: "Purchase is successfully transacted!",
                             data: {
@@ -573,7 +531,7 @@ exports.controllers = {
                             }
                         })];
                 case 5:
-                    e_9 = _e.sent();
+                    e_9 = _d.sent();
                     console.error("buy error", e_9);
                     res.send("buy error: ".concat(e_9.message));
                     return [3 /*break*/, 6];
@@ -582,75 +540,54 @@ exports.controllers = {
         });
     }); },
     reset: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-        var _a, userId, role, user, signedIn, deposit, e_10;
+        var _a, userId, role, deposit, e_10;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    _b.trys.push([0, 3, , 4]);
+                    _b.trys.push([0, 2, , 3]);
                     _a = req.decode, userId = _a.userId, role = _a.role;
                     //console.log("userId, role", userId, role);
                     if (!(userId && role === "buyer")) {
                         throw new Error("'userId or role' not validated");
                     }
-                    return [4 /*yield*/, models_1.User.find({
-                            userId: userId
-                        })];
-                case 1:
-                    user = _b.sent();
-                    if (!(user.length > 0)) {
-                        throw new Error("Username not found!");
-                    }
-                    signedIn = user[0].signedIn;
-                    if (!signedIn) {
-                        throw new Error("User not signedIn");
+                    //checkSession
+                    if (!(req.session.userid && req.session.userid === userId)) {
+                        throw new Error("Session not authorized.");
                     }
                     deposit = 0;
                     return [4 /*yield*/, models_1.User.findOneAndUpdate({ userId: userId }, { deposit: deposit })];
-                case 2:
+                case 1:
                     _b.sent();
                     return [2 /*return*/, res.json({
                             message: "User deposit reset!"
                         })];
-                case 3:
+                case 2:
                     e_10 = _b.sent();
                     console.error("deposit error", e_10);
                     res.send("deposit error: ".concat(e_10.message));
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
             }
         });
     }); },
     logout: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-        var userId, user, e_11;
+        var userId;
         return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 3, , 4]);
-                    userId = req.decode.userId;
-                    if (!userId) {
-                        throw new Error("'userId' not validated");
-                    }
-                    return [4 /*yield*/, models_1.User.find({
-                            userId: userId
-                        })];
-                case 1:
-                    user = _a.sent();
-                    if (!(user.length > 0)) {
-                        throw new Error("User not found!");
-                    }
-                    return [4 /*yield*/, models_1.User.findOneAndUpdate({ userId: userId }, { signedIn: false })];
-                case 2:
-                    _a.sent();
-                    return [2 /*return*/, res.json({
-                            message: "User logged out!"
-                        })];
-                case 3:
-                    e_11 = _a.sent();
-                    console.error("logout error", e_11);
-                    res.send("logout error: ".concat(e_11.message));
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
+            try {
+                userId = req.decode.userId;
+                if (!userId) {
+                    throw new Error("'userId' not validated");
+                }
+                req.session.destroy();
+                return [2 /*return*/, res.clearCookie(constants_1.COOKIE_NAME).json({
+                        message: "User logged out!"
+                    })];
             }
+            catch (e) {
+                console.error("logout error", e);
+                res.send("logout error: ".concat(e.message));
+            }
+            return [2 /*return*/];
         });
     }); }
 };

@@ -1,9 +1,12 @@
 import { describe, it } from "mocha";
 import chai from "chai";
 import chaiHttp from "chai-http";
-import server from "../src/server/index.js";
+import server from "../server/index";
 const should = chai.should();
 chai.use(chaiHttp);
+
+console.log("chai", chai);
+console.log("describe, it", describe, it);
 
 //deposit, buy, one-crud
 
@@ -54,7 +57,7 @@ describe("vending-machine", function() {
       .send({
         productName: `Product-${Math.floor(Math.random() * 10000)}`,
         amountAvailable: 20,
-        cost: 10
+        cost: 5
       })
       .end(function(err, res) {
         console.log("createProduct response", res.body.data);
@@ -84,11 +87,11 @@ describe("vending-machine", function() {
       .set("authorization", `Bearer ${BUYER_TOKEN}`)
       .send({
         productId: PRODUCT_ID,
-        amountProducts: 2
+        amountProducts: 3
       })
       .end(function(err, res) {
         console.log("buyProduct response:", res.body.data);
-        res.should.have.status(200);
+        res.body.data.should.eql([1, 1, 1, 1, 0]);
         done();
       });
   });

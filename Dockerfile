@@ -1,19 +1,22 @@
 # build step
 FROM node:14-alpine AS builder
-WORKDIR /usr/src/app
+WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY tsconfig*.json ./
 COPY src src
+COPY run.sh ./
+RUN chmod +x run.sh
 RUN npm run build
 
 # run step
 FROM node:14-alpine
 ENV NODE_ENV=production
-WORKDIR /usr/src/app
+WORKDIR /app
 COPY package*.json ./
+COPY run.sh ./
 RUN npm install
-RUN ls -al
-COPY --from=builder /usr/src/app/dist/ dist/
+COPY --from=builder /app/dist/ dist/
 EXPOSE 15500
-ENTRYPOINT [ "node", "dist/server/index.js" ]
+ENTRYPOINT ["sh", "run.sh"]
+#CMD [ "node", "dist/server/index.js", "&&", "npm", "run", "test"]
