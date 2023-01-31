@@ -1,6 +1,7 @@
 const JWT_SECRET: string = process.env.JWT_SECRET || "";
 const COIN_VALUES: Number[] = [5, 10, 20, 50, 100];
 
+import { COOKIE_NAME } from "./constants";
 import { TokenData } from "../types/index";
 import jwt from "jsonwebtoken";
 import { uuid } from "uuidv4";
@@ -16,6 +17,9 @@ import { DB_URL } from "../db/config";
 connect({ DB_URL });
 
 function changeCoins(value: number): number[] {
+  /*
+    greedy approach: largest coins first
+  */
   let len: number = COIN_VALUES.length;
   let change: number[] = new Array(len).fill(0);
   let coin, quotient, rem;
@@ -23,10 +27,10 @@ function changeCoins(value: number): number[] {
     coin = COIN_VALUES[i];
     quotient = Math.floor(value / coin);
     if (i === 0) {
-      change[0] = value;
+      change[0] = Math.floor(value / coin);
     } else if (quotient > 0) {
       change[i] = quotient;
-      value = value % coin;
+      value = value - quotient * coin;
     }
   }
   return change;
@@ -171,14 +175,9 @@ export const controllers = {
       } else {
         productId = productId.trim();
       }
-      let { userId, role } = req.decode;
-      //console.log("userId, role", userId, role);
-      if (!(userId && role === "seller")) {
-        throw new Error("'userId or role' not validated");
-      }
 
       //checkSession
-      if (!(req.session.userid && req.session.userid === userId)) {
+      if (!req.session.userid) {
         throw new Error("Session not authorized.");
       }
 
@@ -192,8 +191,7 @@ export const controllers = {
         data: {
           productName,
           amountAvailable,
-          cost,
-          sellerId
+          cost
         }
       });
     } catch (e) {
@@ -448,7 +446,7 @@ export const controllers = {
         throw new Error("'userId' not validated");
       }
       req.session.destroy();
-      return res.json({
+      return res.clearCookie(COOKIE_NAME).json({
         message: "User logged out!"
       });
     } catch (e) {
