@@ -162,8 +162,7 @@ export const controllers = {
       });
       //console.log("creating product:", product);
       await product.save();
-      let product_array = await Product.find({ productId });
-      //console.log("retrieving product:", product_array);
+      //let product_array = await Product.find({ productId });
       return res.status(201).json({
         message: "Product successfully created!",
         data: { productId }
@@ -181,7 +180,7 @@ export const controllers = {
       if (!productId) {
         return res.status(406).send("'productId' urlParam not passed!");
       } else {
-        //productId = productId.trim();
+        productId = productId.trim();
       }
 
       //checkSession
@@ -333,7 +332,6 @@ export const controllers = {
         return res.status(406).send("Provided coin value is ineligible.");
       }
       let { userId, role } = req.decode;
-      console.log("userId, role", userId, role);
       if (!(userId && role === "buyer")) {
         return res.status(401).send("'userId or role' not validated");
       }

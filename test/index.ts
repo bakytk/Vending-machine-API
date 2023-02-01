@@ -1,12 +1,9 @@
 import { describe, it } from "mocha";
 import chai from "chai";
 import chaiHttp from "chai-http";
-import server from "../server/index";
+import server from "../src/server/index";
 const should = chai.should();
 chai.use(chaiHttp);
-
-console.log("chai", chai);
-console.log("describe, it", describe, it);
 
 //deposit, buy, one-crud
 
@@ -62,7 +59,7 @@ describe("vending-machine", function() {
       .end(function(err, res) {
         console.log("createProduct response", res.body.data);
         PRODUCT_ID = res.body.data.productId;
-        res.should.have.status(200);
+        res.should.have.status(201);
         done();
       });
   });
@@ -72,11 +69,11 @@ describe("vending-machine", function() {
       .post("/deposit")
       .set("authorization", `Bearer ${BUYER_TOKEN}`)
       .send({
-        coin: 100 //70
+        coin: 100
       })
       .end(function(err, res) {
         console.log("deposit response", res.body.data);
-        res.body.data.deposit.should.gt(0);
+        res.body.data.deposit.should.eq(100);
         done();
       });
   });
@@ -91,7 +88,7 @@ describe("vending-machine", function() {
       })
       .end(function(err, res) {
         console.log("buyProduct response:", res.body.data);
-        res.body.data.should.eql([1, 1, 1, 1, 0]);
+        res.body.data.change.should.eql([1, 1, 1, 1, 0]);
         done();
       });
   });
