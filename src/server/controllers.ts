@@ -38,7 +38,7 @@ function changeCoins(value: number): number[] {
 
 export const controllers = {
   fallback: async (req, res) => {
-    return res.status(401).json({ message: "Invalid endpoint or method" });
+    return res.status(405).json({ message: "Invalid endpoint or method" });
   },
 
   ping: async (req, res) => {
@@ -51,10 +51,12 @@ export const controllers = {
       let { username, password, role } = req.body;
       //console.log("req.body", req.body);
       if (!(username && password && role)) {
-        throw new Error("Either of 'username-password-role' is absent!");
+        return res
+          .status(406)
+          .send("Either of 'username-password-role' is absent!");
       }
       if (!(role === "buyer" || role === "seller")) {
-        throw new Error("Invalid role!");
+        return res.status(406).send("Invalid role!");
       }
       let userId: string = uuid();
       let data = {
@@ -72,14 +74,14 @@ export const controllers = {
         role
       };
       let token: string = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "30m" });
-      res.json({
+      res.status(201).json({
         message: "Successful registration!",
         access_token: token,
         userId
       });
     } catch (e) {
       console.log("signup error", e);
-      res.send(`Signup error`);
+      res.status(500).send(`Signup error`);
     }
   },
 
@@ -88,24 +90,24 @@ export const controllers = {
     try {
       let { username, password } = req.query;
       if (!(username && password)) {
-        throw new Error("Username or password absent!");
+        return res.status(406).send("Username or password absent!");
       }
       let user = await User.find({
         username,
         password
       });
       if (!(user.length > 0)) {
-        throw new Error("Username not found!");
+        return res.status(401).send("Username not found!");
       }
       //console.log("fetched user", user);
       let { password: db_password, role, userId, deposit } = user[0];
       if (db_password != password) {
-        throw new Error("Incorrect password!");
+        return res.status(401).send("Incorrect password!");
       }
       if (req.session.userid) {
-        throw new Error(
-          "There is already an active session using your account. "
-        );
+        return res
+          .status(401)
+          .send("There is already an active session using your account. ");
       }
       req.session.userid = userId;
       let tokenData: TokenData = {
@@ -121,7 +123,7 @@ export const controllers = {
       });
     } catch (e) {
       console.log("signin error", e);
-      res.send(`Signin error: ${e.message}`);
+      res.status(500).send(`Signin error: ${e.message}`);
     }
   },
 
@@ -129,23 +131,25 @@ export const controllers = {
     try {
       let { userId, role } = req.decode;
       if (!(userId && role === "seller")) {
-        throw new Error("'userId or role' not validated");
+        return res.status(406).send("'userId or role' not validated");
       }
       if (role !== "seller") {
-        throw new Error("Action not valid for role");
+        return res.status(406).send("Action not valid for role");
       }
 
       //checkSession
       if (!(req.session.userid && req.session.userid === userId)) {
-        throw new Error("Session not authorized.");
+        return res.status(401).send("Session not authorized.");
       }
 
       //product crud
       let { productName, amountAvailable, cost } = req.body;
       if (!(productName && amountAvailable && cost)) {
-        throw new Error(
-          "One of 'productName, amountAvailable, cost' params not passed"
-        );
+        return res
+          .status(406)
+          .send(
+            "One of 'productName, amountAvailable, cost' params not passed"
+          );
       }
       let productId: string = uuid();
       let product = new Product({
@@ -155,15 +159,17 @@ export const controllers = {
         cost: Number(cost),
         sellerId: userId
       });
-      console.log("product", product);
+      console.log("creating product:", product);
       await product.save();
-      return res.json({
+      let product_array = await Product.find({ productId });
+      console.log("retrieving product:", product_array);
+      return res.status(201).json({
         message: "Product successfully created!",
         data: { productId }
       });
     } catch (e) {
       console.error("createProduct error", e);
-      res.send(`createProduct error: ${e.message}`);
+      res.status(500).send(`createProduct error: ${e.message}`);
     }
   },
 
@@ -171,20 +177,20 @@ export const controllers = {
     try {
       let { id: productId } = req.params;
       if (!productId) {
-        throw new Error("'productId' urlParam not passed!");
+        return res.status(406).send("'productId' urlParam not passed!");
       } else {
         productId = productId.trim();
       }
 
       //checkSession
       if (!req.session.userid) {
-        throw new Error("Session not authorized.");
+        return res.status(401).send("Session not authorized.");
       }
 
       //product crud
       let product = await Product.find({ productId });
       if (!(product.length > 0)) {
-        throw new Error("Product not found!");
+        return res.status(404).send("Product not found!");
       }
       let { productName, amountAvailable, cost, sellerId } = product[0];
       return res.json({
@@ -196,7 +202,7 @@ export const controllers = {
       });
     } catch (e) {
       console.error("getProduct error", e);
-      res.send(`getProduct error: ${e.message}`);
+      res.status(500).send(`getProduct error: ${e.message}`);
     }
   },
 
@@ -206,33 +212,34 @@ export const controllers = {
       let { userId, role } = req.decode;
       //console.log("userId, role", userId, role);
       if (!(userId && role === "seller")) {
-        throw new Error("'userId or role' not validated");
+        return res.status(401).send("'userId or role' not validated");
       }
 
       //checkSession
       if (!(req.session.userid && req.session.userid === userId)) {
-        throw new Error("Session not authorized.");
+        return res.status(401).send("Session not authorized.");
       }
 
       //step 2. parse productName & search for it
       let { id: productId } = req.params;
       if (!productId) {
-        throw new Error("'productId' urlParam not passed!");
+        return res.status(406).send("'productId' urlParam not passed!");
       } else {
         productId = productId.trim();
       }
 
       //step 3. check if body not null & seller is authorized
+      console.log("productId", productId);
       if (!req.body) {
-        throw new Error("request body is empty!");
+        return res.status(406).send("request body is empty!");
       }
-      let product = await Product.find({ productId });
+      let product = await Product.findOne({ productId });
       if (!(product.length > 0)) {
-        throw new Error("Product not found!");
+        return res.status(404).send("Product not found!");
       }
       let { sellerId: db_sellerId } = product[0];
       if (!(userId === db_sellerId && role === "seller")) {
-        throw new Error("Either role or sellerId is ineligible!");
+        res.status(406).send("Either role or sellerId is ineligible!");
       }
 
       //step 4.update
@@ -249,7 +256,9 @@ export const controllers = {
           if (item === "cost") {
             let cost: number = Number(req.body[item]);
             if (cost <= 0 || cost % 5 != 0) {
-              throw new Error(`Cost value must be positive & multiple of 5`);
+              res
+                .status(406)
+                .send(`Cost value must be positive & multiple of 5`);
             }
             updateData[item] = Number(req.body[item]);
           } else if (item === "amountAvailable") {
@@ -260,13 +269,13 @@ export const controllers = {
         }
       }
       if (Object.keys(updateData).length === 0) {
-        throw new Error(`Expected update params not received!`);
+        return res.status(406).send(`Expected update params not received!`);
       }
       await Product.findOneAndUpdate({ productId }, { ...updateData });
-      return res.status(200).json({ message: "Product successfully updated!" });
+      return res.status(204).json({ message: "Product successfully updated!" });
     } catch (e) {
       console.error("putProduct", e);
-      res.send(`putProduct error: ${e.message}`);
+      res.status(500).send(`putProduct error: ${e.message}`);
     }
   },
 
@@ -275,18 +284,18 @@ export const controllers = {
       //step 1. check if we have userId & role
       let { userId, role } = req.decode;
       if (!(userId && role === "seller")) {
-        throw new Error("'userId or role' not validated");
+        return res.status(401).send("'userId or role' not validated");
       }
 
       //checkSession
       if (!(req.session.userid && req.session.userid === userId)) {
-        throw new Error("Session not authorized.");
+        return res.status(401).send("Session not authorized.");
       }
 
       //step 2. read productId
       let { id: productId } = req.params;
       if (!productId) {
-        throw new Error("'productId' urlParam not passed!");
+        return res.status(406).send("'productId' urlParam not passed!");
       } else {
         productId = productId.trim();
       }
@@ -294,19 +303,19 @@ export const controllers = {
         productId
       });
       if (!(product.length > 0)) {
-        throw new Error("ProductId not found!");
+        return res.status(404).send("ProductId not found!");
       }
 
       //check sellerId match
       let { sellerId: db_sellerId } = product[0];
       if (!(userId === db_sellerId && role === "seller")) {
-        throw new Error("Either role or sellerId is ineligible!");
+        return res.status(401).send("Either role or sellerId is ineligible!");
       }
       await Product.deleteOne({ productId });
-      return res.status(200).json({ message: "Product successfully deleted!" });
+      return res.status(202).json({ message: "Product successfully deleted!" });
     } catch (e) {
       console.error("deleteProduct error", e);
-      res.send(`deleteProduct error: ${e.message}`);
+      res.status(500).send(`deleteProduct error: ${e.message}`);
     }
   },
 
@@ -314,20 +323,20 @@ export const controllers = {
     try {
       let { coin } = req.body;
       if (!coin) {
-        throw new Error("'coin' value not passed.");
+        res.status(406).send("'coin' value not passed.");
       }
       if (!COIN_VALUES.includes(Number(coin))) {
-        throw new Error("Provided coin value is ineligible.");
+        res.status(406).send("Provided coin value is ineligible.");
       }
       let { userId, role } = req.decode;
       //console.log("userId, role", userId, role);
       if (!(userId && role === "buyer")) {
-        throw new Error("'userId or role' not validated");
+        res.status(401).send("'userId or role' not validated");
       }
 
       //checkSession
       if (!(req.session.userid && req.session.userid === userId)) {
-        throw new Error("Session not authorized.");
+        res.status(401).send("Session not authorized.");
       }
 
       //update balance
@@ -338,7 +347,7 @@ export const controllers = {
       let { deposit } = user[0];
       deposit += Number(coin);
       await User.findOneAndUpdate({ userId }, { deposit });
-      return res.json({
+      return res.status(204).json({
         message: "Coin successfully deposited!",
         data: {
           userId,
@@ -347,7 +356,7 @@ export const controllers = {
       });
     } catch (e) {
       console.error("deposit error", e);
-      res.send(`deposit error: ${e.message}`);
+      res.status(500).send(`deposit error: ${e.message}`);
     }
   },
 
@@ -355,17 +364,17 @@ export const controllers = {
     try {
       let { productId, amountProducts } = req.body;
       if (!(productId && amountProducts)) {
-        throw new Error("'productId or amountProducts' params not passed");
+        res.status(406).send("'productId or amountProducts' params not passed");
       }
       let { userId, role } = req.decode;
       console.log("productId, amountProducts");
+      res.status(401).send("'userId or role' not validated");
       if (!(userId && role === "buyer")) {
-        throw new Error("'userId or role' not validated");
       }
 
       //checkSession
       if (!(req.session.userid && req.session.userid === userId)) {
-        throw new Error("Session not authorized.");
+        res.status(401).send("Session not authorized.");
       }
 
       //check if there are enough items
@@ -373,7 +382,7 @@ export const controllers = {
         productId
       });
       if (!(product.length > 0)) {
-        throw new Error("Product not found!");
+        res.status(401).send("Product not found!");
       }
       //console.log("product", product[0]);
       let { cost, amountAvailable } = product[0];
@@ -384,7 +393,7 @@ export const controllers = {
       //check if deposit enough for purchase
       let user = await User.find({ userId });
       if (!(user.length > 0)) {
-        throw new Error("UserId not found!");
+        res.status(401).send("UserId not found!");
       }
       let { deposit } = user[0];
       let totalCost = cost * Number(amountProducts);
@@ -401,7 +410,7 @@ export const controllers = {
       //debit Product stock
       amountAvailable -= Number(amountProducts);
       await Product.findOneAndUpdate({ productId }, { amountAvailable });
-      return res.json({
+      return res.status(204).json({
         message: "Purchase is successfully transacted!",
         data: {
           productId,
@@ -411,7 +420,7 @@ export const controllers = {
       });
     } catch (e) {
       console.error("buy error", e);
-      res.send(`buy error: ${e.message}`);
+      res.status(500).send(`buy error: ${e.message}`);
     }
   },
 
@@ -420,22 +429,22 @@ export const controllers = {
       let { userId, role } = req.decode;
       //console.log("userId, role", userId, role);
       if (!(userId && role === "buyer")) {
-        throw new Error("'userId or role' not validated");
+        res.status(401).send("'userId or role' not validated");
       }
 
       //checkSession
       if (!(req.session.userid && req.session.userid === userId)) {
-        throw new Error("Session not authorized.");
+        res.status(401).send("Session not authorized.");
       }
 
       let deposit = 0;
       await User.findOneAndUpdate({ userId }, { deposit });
-      return res.json({
+      return res.status(204).json({
         message: "User deposit reset!"
       });
     } catch (e) {
       console.error("deposit error", e);
-      res.send(`deposit error: ${e.message}`);
+      res.status(500).send(`deposit error: ${e.message}`);
     }
   },
 
@@ -443,15 +452,18 @@ export const controllers = {
     try {
       let { userId } = req.decode;
       if (!userId) {
-        throw new Error("'userId' not validated");
+        res.status(401).send("'userId' not validated");
       }
       req.session.destroy();
-      return res.clearCookie(COOKIE_NAME).json({
-        message: "User logged out!"
-      });
+      return res
+        .status(204)
+        .clearCookie(COOKIE_NAME)
+        .json({
+          message: "User logged out!"
+        });
     } catch (e) {
       console.error("logout error", e);
-      res.send(`logout error: ${e.message}`);
+      res.status(500).send(`logout error: ${e.message}`);
     }
   }
 };
