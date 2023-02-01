@@ -1,0 +1,470 @@
+{
+	"info": {
+		"_postman_id": "1f91ffd5-1853-400c-8f73-2670cc7dd608",
+		"name": "APP_VENDING",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "18542445"
+	},
+	"item": [
+		{
+			"name": "ping",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:15500/alive",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"alive"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "signup_seller",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"user_s\", \"password\": \"1234\", \"role\": \"seller\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:15500/user",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"user"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "signup_buyer",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"user_b4\", \"password\": \"1234\", \"role\": \"buyer\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:15500/user",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"user"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "signin_seller",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:15500/user?username=user_s&password=1234",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"user"
+					],
+					"query": [
+						{
+							"key": "username",
+							"value": "user_s"
+						},
+						{
+							"key": "password",
+							"value": "1234"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "signin-buyer",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:15500/user?username=user_b2&password=1234",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"user"
+					],
+					"query": [
+						{
+							"key": "username",
+							"value": "user_b2"
+						},
+						{
+							"key": "password",
+							"value": "1234"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "createProduct",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5OGFmMTYwYi0yNGIyLTRmZDMtOWY2MC04MTE2ZTM3ZjZhOGIiLCJyb2xlIjoic2VsbGVyIiwiaWF0IjoxNjc1MjUxNjA4LCJleHAiOjE2NzUyNTM0MDh9.2nERTSOHUrY0mumiracoeF443seTj-767yzJInhXeHg",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"productName\": \"product30\", \"cost\": 25,  \"amountAvailable\": 150\n}"
+				},
+				"url": {
+					"raw": "http://localhost:15500/product",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"product"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getProduct",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5OGFmMTYwYi0yNGIyLTRmZDMtOWY2MC04MTE2ZTM3ZjZhOGIiLCJyb2xlIjoic2VsbGVyIiwiaWF0IjoxNjc1MjU5MjM5LCJleHAiOjE2NzUyNjEwMzl9.3fguakexvOQPYqZxWcqGc0Ya2BZ7cRN0C0ZudJj6ZvM",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:15500/product/a5e83e75-ffd7-4dad-8b74-e475a329a3ff",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"product",
+						"a5e83e75-ffd7-4dad-8b74-e475a329a3ff"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "putProduct",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5OGFmMTYwYi0yNGIyLTRmZDMtOWY2MC04MTE2ZTM3ZjZhOGIiLCJyb2xlIjoic2VsbGVyIiwiaWF0IjoxNjc1MjQ5OTA4LCJleHAiOjE2NzUyNTE3MDh9.CtdDXIJweGNoXxEJuAawQx0htEP1j3OOipf0HRQDPHU",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"amountAvailable\": 150,\n    \"cost\": 5\n}"
+				},
+				"url": {
+					"raw": "http://localhost:15500/product/0ca94e79-a758-46cb-a351-76e93fe3a7a4",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"product",
+						"0ca94e79-a758-46cb-a351-76e93fe3a7a4"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "deleteProduct",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5OGFmMTYwYi0yNGIyLTRmZDMtOWY2MC04MTE2ZTM3ZjZhOGIiLCJyb2xlIjoic2VsbGVyIiwiaWF0IjoxNjc1MjUxNjA4LCJleHAiOjE2NzUyNTM0MDh9.2nERTSOHUrY0mumiracoeF443seTj-767yzJInhXeHg",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:15500/product/0ca94e79-a758-46cb-a351-76e93fe3a7a4",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"product",
+						"0ca94e79-a758-46cb-a351-76e93fe3a7a4"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "deposit",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ZDY2ZDExNy0wMTk5LTRlNTQtOGMzYS04NGE3YjJlMWNlZjYiLCJyb2xlIjoiYnV5ZXIiLCJpYXQiOjE2NzUyNTAyNzIsImV4cCI6MTY3NTI1MjA3Mn0.kpmBdpvlFkHiSfrTegTWbbX2YXCcm2HnVags7ZsDVFE",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"coin\": 100\n}"
+				},
+				"url": {
+					"raw": "http://localhost:15500/deposit",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"deposit"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "buy",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ZDY2ZDExNy0wMTk5LTRlNTQtOGMzYS04NGE3YjJlMWNlZjYiLCJyb2xlIjoiYnV5ZXIiLCJpYXQiOjE2NzUyNTAyNzIsImV4cCI6MTY3NTI1MjA3Mn0.kpmBdpvlFkHiSfrTegTWbbX2YXCcm2HnVags7ZsDVFE",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"productId\": \"0ca94e79-a758-46cb-a351-76e93fe3a7a4\",\n    \"amountProducts\": 3\n}"
+				},
+				"url": {
+					"raw": "http://localhost:15500/buy",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"buy"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "reset",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ZDY2ZDExNy0wMTk5LTRlNTQtOGMzYS04NGE3YjJlMWNlZjYiLCJyb2xlIjoiYnV5ZXIiLCJpYXQiOjE2NzUyNTAyNzIsImV4cCI6MTY3NTI1MjA3Mn0.kpmBdpvlFkHiSfrTegTWbbX2YXCcm2HnVags7ZsDVFE",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:15500/reset",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"reset"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "logOut",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ZDY2ZDExNy0wMTk5LTRlNTQtOGMzYS04NGE3YjJlMWNlZjYiLCJyb2xlIjoiYnV5ZXIiLCJpYXQiOjE2NzUyNTAyNzIsImV4cCI6MTY3NTI1MjA3Mn0.kpmBdpvlFkHiSfrTegTWbbX2YXCcm2HnVags7ZsDVFE",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:15500/logout/all",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "15500",
+					"path": [
+						"logout",
+						"all"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
